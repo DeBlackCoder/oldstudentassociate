@@ -106,7 +106,7 @@ export default function Navbar() {
       transition={{ duration: 0.5 }}
     >
       {/* Outer wrapper — provides the margin from screen edges */}
-      <div className="w-[85%] sm:w-[90%] lg:w-[70%] px-4 sm:px-6" style={{ paddingTop: '10px' }}>
+      <div className={`px-4 sm:px-6 ${isDashboard ? 'w-[95%] sm:w-[98%] lg:w-[90%]' : 'w-[85%] sm:w-[90%] lg:w-[70%]'}`} style={{ paddingTop: '10px' }}>
         {/* Floating glass pill */}
         <div ref={menuRef} className="pointer-events-auto flex flex-col">
           {/* Pill bar */}
@@ -141,29 +141,49 @@ export default function Navbar() {
               </div>
             </Link>
 
-            {/* Desktop nav - shows on all screens except mobile */}
-            <nav className="hidden sm:flex flex-nowrap items-center gap-x-5">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="relative font-body text-[11px] tracking-widest uppercase transition-colors text-[#121417]/70 hover:text-[#1a472a] px-4 py-3 rounded-lg"
-                >
-                  {/* Hidden bold copy reserves width so active state doesn't shift layout */}
-                  <span className="invisible font-bold block h-0 overflow-hidden" aria-hidden="true">
-                    {link.label}
-                  </span>
-                  <span
-                    className={`absolute inset-0 flex items-center justify-center transition-colors ${
-                      pathname === link.href || pathname.startsWith(link.href + "/")
-                        ? "text-[#1a472a] font-bold"
-                        : "text-[#121417]/70 hover:text-[#1a472a]"
+            {/* Desktop nav — shows tabs on dashboard, links elsewhere */}
+            <nav className="hidden sm:flex flex-nowrap items-center gap-x-1">
+              {isDashboard ? (
+                DASHBOARD_TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      window.dispatchEvent(new CustomEvent('dashboard-tab-change', { detail: tab.id }));
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('tab', tab.id);
+                      window.history.pushState({}, '', url.toString());
+                    }}
+                    className={`font-body text-[11px] tracking-widest uppercase transition-colors px-3 py-2 rounded-lg whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? 'text-[#1a472a] font-bold bg-[#1a472a]/10'
+                        : 'text-[#121417]/70 hover:text-[#1a472a]'
                     }`}
                   >
-                    {link.label}
-                  </span>
-                </Link>
-              ))}
+                    {tab.label}
+                  </button>
+                ))
+              ) : (
+                navLinks.map((link) => (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    className="relative font-body text-[11px] tracking-widest uppercase transition-colors text-[#121417]/70 hover:text-[#1a472a] px-4 py-3 rounded-lg"
+                  >
+                    <span className="invisible font-bold block h-0 overflow-hidden" aria-hidden="true">
+                      {link.label}
+                    </span>
+                    <span
+                      className={`absolute inset-0 flex items-center justify-center transition-colors ${
+                        pathname === link.href || pathname.startsWith(link.href + "/")
+                          ? "text-[#1a472a] font-bold"
+                          : "text-[#121417]/70 hover:text-[#1a472a]"
+                      }`}
+                    >
+                      {link.label}
+                    </span>
+                  </Link>
+                ))
+              )}
             </nav>
 
             {/* Right actions */}

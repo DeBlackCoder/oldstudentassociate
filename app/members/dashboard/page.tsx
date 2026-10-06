@@ -515,27 +515,6 @@ function MemberDashboardContent() {
       {/* Spacer for fixed navbar */}
       <div className="h-20 flex-shrink-0" />
 
-      {/* Desktop tab bar — hidden on mobile (tabs live in navbar hamburger menu) */}
-      <div className="hidden sm:block sticky top-20 z-30 bg-[#ECEBE6] border-b border-neutral-200 px-4">
-        <div className="max-w-5xl mx-auto overflow-x-auto">
-          <div className="flex gap-1 min-w-max pb-0">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => switchTab(tab.id)}
-                className={`px-5 py-3 text-sm font-medium transition-colors whitespace-nowrap border-b-2 -mb-px ${
-                  activeTab === tab.id
-                    ? 'border-[#1a472a] text-[#1a472a]'
-                    : 'border-transparent text-neutral-500 hover:text-[#1a472a]'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Page content */}
       <main className="flex-1 w-full overflow-y-auto">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-16">
