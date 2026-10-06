@@ -27,7 +27,6 @@ const DASHBOARD_TABS = [
 export default function Navbar() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [member, setMember] = useState<{ fullName?: string; email?: string } | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
@@ -69,13 +68,6 @@ export default function Navbar() {
       .catch(() => { setMember(null); })
       .finally(() => setSessionChecked(true));
   }, [pathname]);
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 640);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
 
   // Close on outside click
   useEffect(() => {
@@ -229,16 +221,15 @@ export default function Navbar() {
                 )
               )}
 
-              {/* Hamburger — only rendered on mobile */}
-              {isMobile && (
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen((o) => !o)}
-                  className="inline-flex items-center justify-center"
-                  style={{ borderRadius: "8px", width: 38, height: 36 }}
-                  aria-label={menuOpen ? "Close menu" : "Open menu"}
-                  aria-expanded={menuOpen}
-                >
+              {/* Hamburger — visible on mobile via CSS, not JS state */}
+              <button
+                type="button"
+                onClick={() => setMenuOpen((o) => !o)}
+                className="sm:hidden inline-flex items-center justify-center"
+                style={{ borderRadius: "8px", width: 38, height: 36 }}
+                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={menuOpen}
+              >
                   <span className="flex flex-col gap-[6px] items-center justify-center w-7 h-7 relative">
                     <motion.span
                       className="block h-[2.5px] w-7 bg-[#121417] rounded-full origin-center absolute"
@@ -263,7 +254,6 @@ export default function Navbar() {
                     />
                   </span>
                 </button>
-              )}
             </div>
           </div>
 
