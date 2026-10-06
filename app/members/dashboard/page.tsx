@@ -51,6 +51,37 @@ function MemberDashboardContent() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{ label: string; description: string; onConfirm: () => void } | null>(null);
+
+  function withConfirm(label: string, description: string, onConfirm: () => void) {
+    setMenuOpen(false);
+    setConfirmAction({ label, description, onConfirm });
+  }
+
+  const ConfirmModal = () => confirmAction ? (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4"
+      style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
+      onClick={() => setConfirmAction(null)}>
+      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+        <h3 className="font-bold text-[#121417] text-lg mb-2">{confirmAction.label}</h3>
+        <p className="text-sm text-neutral-500 mb-6">{confirmAction.description}</p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setConfirmAction(null)}
+            className="flex-1 h-10 rounded-full border border-neutral-200 text-sm font-semibold text-neutral-600 hover:bg-neutral-50 transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => { setConfirmAction(null); confirmAction.onConfirm(); }}
+            className="flex-1 h-10 rounded-full bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-all active:scale-95"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   // Sync tab from URL
   useEffect(() => {
@@ -510,6 +541,7 @@ function MemberDashboardContent() {
 
   return (
     <div className="min-h-screen w-full bg-[#ECEBE6] flex flex-col">
+      <ConfirmModal />
 
       {/* ── Fixed dashboard header ─────────────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
@@ -552,7 +584,7 @@ function MemberDashboardContent() {
                 {member.fullName || member.email}
               </span>
               <button
-                onClick={handleLogout}
+                onClick={() => withConfirm('Sign out', 'You will be logged out of your dashboard. You can sign back in at any time.', handleLogout)}
                 className="text-xs text-neutral-400 hover:text-red-500 border border-neutral-200 rounded-full px-3 py-1.5 transition-colors"
               >
                 Sign out
@@ -622,7 +654,7 @@ function MemberDashboardContent() {
                 <ArrowRight className="h-4 w-4" /> Contact Support
               </Link>
               <button
-                onClick={handleLogout}
+                onClick={() => withConfirm('Sign out', 'You will be logged out of your dashboard. You can sign back in at any time.', handleLogout)}
                 className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-red-500 hover:bg-red-50 transition-colors mt-1"
               >
                 <ArrowRight className="h-4 w-4" /> Sign out
