@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { Suspense } from 'react';
 import {
   ArrowRight, CheckCircle, Clock, CreditCard,
-  FileText, IdCard, Loader2, Lock, User, XCircle,
+  FileText, IdCard, Loader2, Lock, XCircle,
 } from 'lucide-react';
 
 interface MemberData {
@@ -50,6 +50,7 @@ function MemberDashboardContent() {
   });
   const [events, setEvents] = useState<EventItem[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Sync tab from URL
   useEffect(() => {
@@ -128,6 +129,23 @@ function MemberDashboardContent() {
     ? <span className="rounded-full bg-red-100 text-red-700 text-xs font-semibold px-3 py-1">Rejected</span>
     : <span className="rounded-full bg-yellow-100 text-yellow-700 text-xs font-semibold px-3 py-1">Pending</span>;
 
+  /* ── Form incomplete banner (shown at top of every tab) ─────── */
+  const FormIncompleteBanner = () => !profileComplete ? (
+    <div className="flex items-center gap-3 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 mb-5">
+      <FileText className="h-5 w-5 text-amber-500 flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-amber-800">Registration form not filled</p>
+        <p className="text-xs text-amber-700 mt-0.5">Complete your membership form to activate your application.</p>
+      </div>
+      <Link
+        href="/register"
+        className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-4 py-1.5 text-xs font-bold text-white hover:bg-amber-600 transition-all"
+      >
+        Fill Form <ArrowRight className="h-3 w-3" />
+      </Link>
+    </div>
+  ) : null;
+
   /* ── Tab content ──────────────────────────────────────────────── */
   const renderTabContent = () => {
     switch (activeTab) {
@@ -135,6 +153,7 @@ function MemberDashboardContent() {
       /* OVERVIEW ─────────────────────────────────────────────────── */
       case 'overview': return (
         <div className="space-y-5">
+          <FormIncompleteBanner />
           {/* Status summary */}
           <div className="rounded-3xl bg-[#F6F5F0] border border-white/60 shadow-xl shadow-black/5 px-6 py-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -252,28 +271,7 @@ function MemberDashboardContent() {
       case 'application': {
         return (
           <div className="space-y-5">
-            {!profileComplete && (
-              <div className="rounded-3xl bg-[#1a472a] px-6 py-7 text-white"
-                style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 h-11 w-11 rounded-xl bg-white/10 flex items-center justify-center">
-                    <FileText className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-lg">Complete Your Profile</p>
-                    <p className="text-sm text-white/70 mt-1 mb-4">
-                      Fill in your personal, school, and professional information to activate your membership application.
-                    </p>
-                    <Link
-                      href="/register"
-                      className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-bold text-[#1a472a] hover:bg-white/90 transition-all active:scale-95"
-                    >
-                      Fill Registration Form <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            )}
+            <FormIncompleteBanner />
             <div className="rounded-3xl bg-[#F6F5F0] border border-white/60 shadow-xl shadow-black/5 overflow-hidden">
               <div className="px-6 py-4 border-b border-neutral-100">
                 <h2 className="font-bold text-[#121417]">Application Details</h2>
@@ -368,8 +366,23 @@ function MemberDashboardContent() {
       case 'events': {
         if (eventsLoading) {
           return (
-            <div className="flex justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-[#1a472a]" />
+            <div className="space-y-4">
+              <FormIncompleteBanner />
+              <div className="flex justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-[#1a472a]" />
+              </div>
+            </div>
+          );
+        }
+
+        if (events.length === 0) {
+          return (
+            <div className="space-y-4">
+              <FormIncompleteBanner />
+              <div className="rounded-3xl bg-[#F6F5F0] border border-white/60 shadow-xl shadow-black/5 p-8 text-center">
+                <p className="font-bold text-[#121417] mb-2">No events yet</p>
+                <p className="text-sm text-neutral-600">No events published yet. Check back soon.</p>
+              </div>
             </div>
           );
         }
@@ -401,6 +414,7 @@ function MemberDashboardContent() {
 
         return (
           <div className="space-y-4">
+            <FormIncompleteBanner />
             <h2 className="font-bold text-xl text-[#121417]">Activities &amp; Events</h2>
             {events.map(event => {
               const isPaidStatus = event.paymentStatus === 'paid' || event.paymentStatus === 'free';
@@ -458,9 +472,12 @@ function MemberDashboardContent() {
       /* MEMBERS ────────────────────────────────────────────────────── */
       case 'members': {
         return (
-          <div className="rounded-3xl bg-[#F6F5F0] border border-white/60 shadow-xl shadow-black/5 p-8">
+          <div className="space-y-4">
+            <FormIncompleteBanner />
+            <div className="rounded-3xl bg-[#F6F5F0] border border-white/60 shadow-xl shadow-black/5 p-8">
             <h2 className="font-bold text-xl text-[#121417] mb-2">Member Directory</h2>
             <p className="text-sm text-neutral-600">Browse and connect with fellow alumni across Rivers State.</p>
+          </div>
           </div>
         );
       }
@@ -469,7 +486,8 @@ function MemberDashboardContent() {
       case 'benefits': {
         return (
           <div className="space-y-4">
-            <h2 className="font-bold text-xl text-[#121417]">Member Benefits</h2>
+            <FormIncompleteBanner />
+            <h2 className="font-bold text-xl text-[#121417]">Member Benefits</h2>            <h2 className="font-bold text-xl text-[#121417]">Member Benefits</h2>
             <div className="grid grid-cols-2 gap-3">
               {[
                 'Educational Programs',
@@ -491,47 +509,136 @@ function MemberDashboardContent() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#ECEBE6] flex flex-col overflow-hidden">
-      {/* Spacer for fixed navbar */}
-      <div className="h-20 flex-shrink-0" />
+    <div className="min-h-screen w-full bg-[#ECEBE6] flex flex-col">
 
-      {/* Page content */}
-      <main className="flex-1 w-full overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-16">
+      {/* ── Fixed dashboard header ─────────────────────────────────── */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-neutral-200 shadow-sm">
 
-          {/* Header row */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-[#1a472a] flex items-center justify-center flex-shrink-0">
-                <User className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="font-bold text-[#121417] leading-tight">{member.fullName || member.email}</p>
-                <p className="text-xs text-neutral-500">{member.email}</p>
-              </div>
+        {/* Main bar */}
+        <div className="flex items-center justify-between px-4 sm:px-6 h-14">
+
+          {/* LEFT — Logo + site name */}
+          <Link href="/" className="flex items-center gap-2.5 shrink-0">
+            <Image src="/logo.png" alt="RSSSOSAA" width={32} height={32} className="object-contain" />
+            <div className="flex flex-col leading-tight">
+              <span className="text-[#1a472a] text-[11px] font-bold tracking-widest uppercase">RSSSOSAA</span>
+              <span className="text-neutral-400 text-[9px] tracking-wide hidden sm:block">Old Students Association</span>
             </div>
-            <div className="flex items-center gap-3">
+          </Link>
+
+          {/* CENTER — Tabs (desktop only) */}
+          <nav className="hidden sm:flex items-center gap-1 overflow-x-auto">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => switchTab(tab.id)}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-[#1a472a] text-white'
+                    : 'text-neutral-500 hover:text-[#1a472a] hover:bg-[#1a472a]/8'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* RIGHT — Profile + status (desktop) + hamburger (mobile) */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Desktop: status badge + name + avatar */}
+            <div className="hidden sm:flex items-center gap-2">
               {statusBadge}
+              <span className="text-sm font-medium text-neutral-600 truncate max-w-[140px]">
+                {member.fullName || member.email}
+              </span>
               <button
                 onClick={handleLogout}
-                className="text-xs text-neutral-400 hover:text-red-500 transition-colors border border-neutral-200 rounded-full px-3 py-1.5"
+                className="text-xs text-neutral-400 hover:text-red-500 border border-neutral-200 rounded-full px-3 py-1.5 transition-colors"
               >
                 Sign out
               </button>
             </div>
-          </div>
 
-          {/* Mobile tab label */}
-          <div className="sm:hidden mb-4">
-            <p className="text-xs text-neutral-400 uppercase tracking-widest font-semibold">
-              {tabs.find(t => t.id === activeTab)?.label}
-            </p>
+            {/* Mobile: avatar + hamburger */}
+            <div className="flex sm:hidden items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-[#1a472a] flex items-center justify-center text-white text-xs font-bold">
+                {(member.fullName || member.email || 'U').split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
+              </div>
+              <button
+                onClick={() => setMenuOpen(o => !o)}
+                className="h-9 w-9 flex flex-col items-center justify-center gap-1.5 rounded-xl border border-neutral-200"
+                aria-label="Menu"
+              >
+                <span className={`block h-0.5 w-5 bg-neutral-600 rounded transition-all ${menuOpen ? 'rotate-45 translate-y-2' : ''}`} />
+                <span className={`block h-0.5 w-5 bg-neutral-600 rounded transition-all ${menuOpen ? 'opacity-0' : ''}`} />
+                <span className={`block h-0.5 w-5 bg-neutral-600 rounded transition-all ${menuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+              </button>
+            </div>
           </div>
+        </div>
 
-          {/* Tab content */}
-          <div className="w-full">
-            {renderTabContent()}
+        {/* Mobile dropdown menu */}
+        {menuOpen && (
+          <div className="sm:hidden border-t border-neutral-100 bg-white">
+            {/* User info + status */}
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-neutral-100">
+              <div className="h-9 w-9 rounded-full bg-[#1a472a] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                {(member.fullName || member.email || 'U').split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-[#121417] truncate">{member.fullName || member.email}</p>
+                <p className="text-xs text-neutral-400 truncate">{member.email}</p>
+              </div>
+              {statusBadge}
+            </div>
+
+            {/* Dashboard tabs */}
+            <div className="px-3 py-2 border-b border-neutral-100">
+              <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-semibold px-2 py-1">Dashboard</p>
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => { switchTab(tab.id); setMenuOpen(false); }}
+                  className={`w-full text-left px-3 py-3 rounded-xl text-sm font-medium transition-colors mb-0.5 ${
+                    activeTab === tab.id
+                      ? 'bg-[#1a472a]/10 text-[#1a472a] font-semibold'
+                      : 'text-neutral-600 hover:bg-neutral-50'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Navigation + sign out */}
+            <div className="px-3 py-2">
+              <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-semibold px-2 py-1">Navigation</p>
+              <Link href="/" onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-neutral-600 hover:bg-neutral-50 transition-colors">
+                <ArrowRight className="h-4 w-4 rotate-180" /> Back to Home
+              </Link>
+              <Link href="/contact" onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-neutral-600 hover:bg-neutral-50 transition-colors">
+                <ArrowRight className="h-4 w-4" /> Contact Support
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-red-500 hover:bg-red-50 transition-colors mt-1"
+              >
+                <ArrowRight className="h-4 w-4" /> Sign out
+              </button>
+            </div>
           </div>
+        )}
+      </header>
+
+      {/* Spacer: 56px top bar only (tabs are in nav/menu, not a second row) */}
+      <div className="h-14 flex-shrink-0" />
+
+      {/* Page content */}
+      <main className="flex-1 w-full overflow-y-auto">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-16">
+          {renderTabContent()}
         </div>
       </main>
     </div>

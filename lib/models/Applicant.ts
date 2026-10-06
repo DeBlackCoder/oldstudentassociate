@@ -59,7 +59,7 @@ const ApplicantSchema = new Schema<IApplicant>({
   gender: { type: String, enum: ['Male', 'Female'], required: true },
   phoneNumber: { type: String, required: true, index: true },
   whatsappNumber: { type: String, required: true },
-  email: { type: String, required: true, lowercase: true, index: true, unique: true },
+  email: { type: String, required: true, lowercase: true, index: true },
   residentialAddress: { type: String, required: true },
   stateOfOrigin: { type: String, required: true },
   lga: { type: String, required: true, index: true },
@@ -111,8 +111,8 @@ const ApplicantSchema = new Schema<IApplicant>({
   timestamps: true
 });
 
-// Prevent duplicate phone numbers
-ApplicantSchema.index({ phoneNumber: 1 }, { unique: true, sparse: true });
+// Phone number index (non-unique for testing)
+ApplicantSchema.index({ phoneNumber: 1 }, { sparse: true });
 
 const Applicant: Model<IApplicant> = models.Applicant || mongoose.model<IApplicant>('Applicant', ApplicantSchema);
 

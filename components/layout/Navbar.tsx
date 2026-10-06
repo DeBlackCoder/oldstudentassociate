@@ -12,7 +12,7 @@ const navLinks = [
 ];
 
 // Pages that are admin/auth — skip navbar here.
-const EXCLUDED_PREFIXES = ["/admin", "/register"];
+const EXCLUDED_PREFIXES = ["/admin", "/register", "/members/dashboard"];
 const EXCLUDED_EXACT: string[] = [];
 
 // Dashboard tab definitions — shown in mobile menu when on /members/dashboard

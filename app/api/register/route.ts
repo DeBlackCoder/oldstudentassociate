@@ -16,25 +16,6 @@ export async function POST(request: NextRequest) {
     // Connect to database
     await connectDB();
 
-    // Check for duplicate email
-    const existingEmail = await Applicant.findOne({ email: validatedData.email.toLowerCase() });
-    if (existingEmail) {
-      return NextResponse.json(
-        { error: 'An application with this email already exists' },
-        { status: 400 }
-      );
-    }
-
-    // Check for duplicate phone number
-    const formattedPhone = formatNigerianPhone(validatedData.phoneNumber);
-    const existingPhone = await Applicant.findOne({ phoneNumber: formattedPhone });
-    if (existingPhone) {
-      return NextResponse.json(
-        { error: 'An application with this phone number already exists' },
-        { status: 400 }
-      );
-    }
-
     // Generate application reference
     const applicationRef = await generateApplicationRef();
 

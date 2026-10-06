@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     const secretKey = process.env.PAYSTACK_SECRET_KEY;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const amountKobo = parseInt(process.env.MEMBERSHIP_FEE_KOBO || '1000000');
+    const amountKobo = parseInt(process.env.MEMBERSHIP_FEE_KOBO || '200000');
 
     if (!secretKey) {
       return NextResponse.json(
@@ -54,7 +54,8 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         email: applicant.email,
         amount: amountKobo,
-        reference: applicationRef,
+        // Paystack only allows alphanumeric, dash, underscore — replace / with -
+        reference: applicationRef.replace(/\//g, '-'),
         callback_url: `${appUrl}/register/payment/callback`,
         metadata: {
           applicationRef: applicant.applicationRef,

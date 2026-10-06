@@ -42,7 +42,9 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
-    const applicant = await Applicant.findOne({ applicationRef: reference });
+    // Paystack reference has / replaced with - — convert back to find the applicant
+    const applicationRef = txn.reference.replace(/-/g, '/');
+    const applicant = await Applicant.findOne({ applicationRef });
 
     if (!applicant) {
       return NextResponse.json(
