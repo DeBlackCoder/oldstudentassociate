@@ -180,9 +180,37 @@ export default function Navbar() {
 
             {/* Right actions */}
             <div className="flex items-center gap-3">
+              {/* Hamburger — always rendered on mobile, outside sessionChecked gate */}
+              <button
+                type="button"
+                onClick={() => setMenuOpen((o) => !o)}
+                className="sm:hidden inline-flex items-center justify-center"
+                style={{ borderRadius: "8px", width: 38, height: 36 }}
+                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={menuOpen}
+              >
+                <span className="flex flex-col gap-[6px] items-center justify-center w-7 h-7 relative">
+                  <motion.span
+                    className="block h-[2.5px] w-7 bg-[#121417] rounded-full origin-center absolute"
+                    animate={menuOpen ? { rotate: 45, y: 0, top: "50%" } : { rotate: 0, top: "20%" }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                  />
+                  <motion.span
+                    className="block h-[2.5px] w-7 bg-[#121417] rounded-full absolute top-1/2"
+                    animate={menuOpen ? { opacity: 0, scaleX: 0 } : { opacity: 1, scaleX: 1 }}
+                    transition={{ duration: 0.15, ease: "easeInOut" }}
+                  />
+                  <motion.span
+                    className="block h-[2.5px] w-7 bg-[#121417] rounded-full origin-center absolute"
+                    animate={menuOpen ? { rotate: -45, y: 0, top: "50%" } : { rotate: 0, top: "80%" }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                  />
+                </span>
+              </button>
+
+              {/* Desktop-only auth actions — hidden on mobile */}
               {sessionChecked && (
                 member ? (
-                  /* Signed in — show initials avatar + My Dashboard */
                   <>
                     <Link
                       href="/members/dashboard"
@@ -201,7 +229,6 @@ export default function Navbar() {
                     </Link>
                   </>
                 ) : (
-                  /* Not signed in — show Login + Become a Member */
                   <>
                     <Link
                       href="/login"
@@ -220,40 +247,6 @@ export default function Navbar() {
                   </>
                 )
               )}
-
-              {/* Hamburger — visible on mobile via CSS, not JS state */}
-              <button
-                type="button"
-                onClick={() => setMenuOpen((o) => !o)}
-                className="sm:hidden inline-flex items-center justify-center"
-                style={{ borderRadius: "8px", width: 38, height: 36 }}
-                aria-label={menuOpen ? "Close menu" : "Open menu"}
-                aria-expanded={menuOpen}
-              >
-                  <span className="flex flex-col gap-[6px] items-center justify-center w-7 h-7 relative">
-                    <motion.span
-                      className="block h-[2.5px] w-7 bg-[#121417] rounded-full origin-center absolute"
-                      animate={menuOpen
-                        ? { rotate: 45, y: 0, top: "50%" }
-                        : { rotate: 0, top: "20%" }
-                      }
-                      transition={{ duration: 0.25, ease: "easeInOut" }}
-                    />
-                    <motion.span
-                      className="block h-[2.5px] w-7 bg-[#121417] rounded-full absolute top-1/2"
-                      animate={menuOpen ? { opacity: 0, scaleX: 0 } : { opacity: 1, scaleX: 1 }}
-                      transition={{ duration: 0.15, ease: "easeInOut" }}
-                    />
-                    <motion.span
-                      className="block h-[2.5px] w-7 bg-[#121417] rounded-full origin-center absolute"
-                      animate={menuOpen
-                        ? { rotate: -45, y: 0, top: "50%" }
-                        : { rotate: 0, top: "80%" }
-                      }
-                      transition={{ duration: 0.25, ease: "easeInOut" }}
-                    />
-                  </span>
-                </button>
             </div>
           </div>
 
