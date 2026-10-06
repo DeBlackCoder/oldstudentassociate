@@ -104,12 +104,12 @@ export default function Navbar() {
           {/* Pill bar */}
           <div
             style={{
-              background: "rgba(246, 245, 240, 0.95)",
+              background: "rgba(255, 255, 255, 0.98)",
               backdropFilter: "blur(24px)",
               WebkitBackdropFilter: "blur(24px)",
-              border: "1px solid rgba(255,255,255,0.6)",
+              border: "1px solid rgba(26,71,42,0.15)",
               borderRadius: "16px",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8)",
+              boxShadow: "0 2px 16px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.9)",
             }}
           >
           {/* Top bar */}
@@ -264,12 +264,12 @@ export default function Navbar() {
                 className="overflow-hidden sm:hidden"
                 style={{
                   marginTop: '9px',
-                  background: "rgba(246, 245, 240, 0.97)",
+                  background: "rgba(255, 255, 255, 0.99)",
                   backdropFilter: "blur(24px)",
                   WebkitBackdropFilter: "blur(24px)",
-                  border: "1px solid rgba(255,255,255,0.6)",
+                  border: "1px solid rgba(26,71,42,0.12)",
                   borderRadius: "16px",
-                  boxShadow: "0 4px 24px rgba(0,0,0,0.1)",
+                  boxShadow: "0 4px 24px rgba(0,0,0,0.12)",
                 }}
               >
                 <div className="px-4 pb-4 pt-3 grid grid-cols-1 gap-3">
