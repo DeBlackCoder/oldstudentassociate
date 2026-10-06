@@ -1,0 +1,32 @@
+{
+  "project_type": "Next.js 16 App Router, TypeScript, Tailwind CSS v4, MongoDB/Mongoose",
+  "language": "TypeScript",
+  "build_system": "npm scripts: 'npm run dev' (dev server), 'npm run build' (production build), 'npm run lint' (eslint). No test framework present.",
+  "test_framework": "none — verification is 'npm run build' returning 0 exit code",
+  "build_command": "npm run build",
+  "test_command": "npm run lint",
+  "verification_instructions": "Run 'npm run build' from the workspace root. A zero exit code with no TypeScript errors is passing. Then run 'npm run lint' for style checks.",
+  "snapshot_or_generated_files": null,
+  "environment_constraints": "Do NOT restart the dev server. Do NOT push to remote. All work happens in the local worktree. The workspace root is C:\\Users\\HP\\Desktop\\Myprojects\\oldstudentassociation — use absolute paths to avoid writing outside it.",
+  "contribution_requirements": "Match existing code style. Mongoose models must use the 'models.X || mongoose.model(X, schema)' guard. All API routes return NextResponse.json. Auth checks are the very first thing in every route handler.",
+  "key_patterns": "1) Admin auth: const session = await getAdminSession(); if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 }). 2) Member auth: const session = await getMemberSession(); if (!session) return NextResponse.json({ error: 'Not authenticated.' }, { status: 401 }). 3) DB: await connectDB() after auth check. 4) Mongoose models: import mongoose,{Schema,models,Model}; const X:Model<IX>=models.X||mongoose.model<IX>('X',XSchema); export default X. 5) Notifications: Notification.create({ type, title, message, link }). 6) Paystack init: POST https://api.paystack.co/transaction/initialize with Bearer PAYSTACK_SECRET_KEY header. 7) Paystack verify: GET https://api.paystack.co/transaction/verify/:reference with same header. 8) Admin dark UI: background '#0f1117' (from layout), card bg 'rgba(255,255,255,0.04)', border '1px solid rgba(255,255,255,0.06)', text-white, accent '#1a472a'. 9) Member dashboard UI: bg-[#ECEBE6], cards are 'rounded-3xl bg-[#F6F5F0] border border-white/60 shadow-xl', accent text-[#1a472a]. 10) Email: import nodemailer transporter + emailHeader() helper already in lib/utils/email.ts; add new exported async functions matching existing style.",
+  "relevant_files": [
+    "lib/models/Applicant.ts",
+    "lib/models/Member.ts",
+    "lib/models/Notification.ts",
+    "lib/db/mongodb.ts",
+    "lib/utils/auth.ts",
+    "lib/utils/member-auth.ts",
+    "lib/utils/email.ts",
+    "app/api/payment/initialize/route.ts",
+    "app/api/payment/verify/route.ts",
+    "app/api/admin/applications/route.ts",
+    "app/api/admin/members/route.ts",
+    "app/api/member/me/route.ts",
+    "app/admin/dashboard/layout.tsx",
+    "app/admin/dashboard/page.tsx",
+    "app/admin/dashboard/members/page.tsx",
+    "app/members/dashboard/page.tsx"
+  ],
+  "directory_structure": "app/ — Next.js pages and API routes (app/api/admin/*, app/api/member/*, app/api/payment/*). app/admin/dashboard/* — admin UI pages. app/members/dashboard/* — member UI pages. lib/models/ — Mongoose models. lib/utils/ — auth, email, DB utilities. lib/db/mongodb.ts — connectDB() function. components/ — shared UI (shadcn components in components/ui/). public/ — static assets including /logo.png."
+}

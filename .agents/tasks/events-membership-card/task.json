@@ -1,0 +1,7 @@
+{
+  "task_id": "task-events-membership-card",
+  "task_description": "Build a full Events system (admin create/manage events, members register, Paystack payment for paid events, event cards) and enhance the Membership Card (download/print, QR placeholder). Includes 2 new Mongoose models, 7 new API routes, 1 new admin page, 1 new member page, updates to admin layout nav and member dashboard, and a new email function.",
+  "status": "pending",
+  "feature_order": ["FEAT-001", "FEAT-002"],
+  "blocked_reason": null
+}

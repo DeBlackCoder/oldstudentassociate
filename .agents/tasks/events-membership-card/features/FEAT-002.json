@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Member-facing UI: update the Events tab in app/members/dashboard/page.tsx with real event cards and registration flow, enhance the Membership Card with a print/download button and QR placeholder, and create the printable Event Card page. Depends on FEAT-001 (API routes must exist first).",
+  "status": "pending",
+  "steps": [
+    "1. In app/members/dashboard/page.tsx, add import for Calendar and MapPin from lucide-react (already has ArrowRight, CheckCircle, etc. imported — just add to the existing import). Add interface EventItem { _id:string; title:string; date:string; location:string; registrationFee:number; isFree:boolean; status:string; isRegistered:boolean; registrationId?:string; paymentStatus?:string; }. Add state: const [events, setEvents] = useState<EventItem[]>([]); const [eventsLoading, setEventsLoading] = useState(false); const [registeringId, setRegisteringId] = useState<string|null>(null);",
+    "2. Add a useEffect in app/members/dashboard/page.tsx that fires when activeTab === 'events' and isPaid && profileComplete: fetch('/api/member/events').then(r=>r.json()).then(d=>{ if(d.success) setEvents(d.events); }).finally(()=>setEventsLoading(false)). Set eventsLoading=true before fetch.",
+    "3. Add async function handleRegister(eventId:string, isFree:boolean) in app/members/dashboard/page.tsx: setRegisteringId(eventId); fetch POST /api/member/events/${eventId}/register; if success && isFree: refetch events list; if success && !isFree && data.authorizationUrl: window.location.href=data.authorizationUrl; setRegisteringId(null).",
+    "4. Replace the 'events' case placeholder in renderTabContent() in app/members/dashboard/page.tsx. Keep existing guards (profileComplete, isPaid). When loading: show <Loader2 className='animate-spin'/>. When no events: show empty state 'No events available right now'. For each event render a card: 'rounded-3xl bg-[#F6F5F0] border border-white/60 shadow-xl shadow-black/5 p-5 space-y-3'. Top row: event title (font-bold text-[#121417]) + status-based badge (Published=emerald). Middle: Calendar icon + formatted date, MapPin icon + location (text-sm text-neutral-600). Bottom row: fee pill (Free=green bg-emerald-100 text-emerald-700, Paid=gray) + action button. Action: if isRegistered && (paymentStatus==='paid'||paymentStatus==='free'): green 'Registered ✓' badge + Link to /members/dashboard/event-card/${registrationId} with text 'View Card'. If isRegistered && paymentStatus==='unpaid': amber 'Payment Pending' + disabled note. If not registered: 'Register' button calling handleRegister(event._id, event.isFree), shows Loader2 when registeringId===event._id.",
+    "5. In app/members/dashboard/page.tsx, in the 'application' case, add id='membership-card-print' to the outer div wrapping the green card (the div with className='rounded-2xl bg-[#1a472a] p-5 text-white space-y-3'). Inside the card, add 'Member since' field after the membership number: show year from new Date(member.paidAt||member.submittedAt||'').getFullYear(). Add QR placeholder: a 6x6 grid of tiny squares (Array(36).fill(0).map((_,i)=><div key={i} style={{width:4,height:4,background:'rgba(255,255,255,0.7)',borderRadius:0.5}}/>) in a flex-wrap container of width 28px) with label 'Scan to Verify' in text-[9px] text-white/40 below it.",
+    "6. Below the green card div in the 'application' case (after the closing div), add a 'Download Card' button: <button onClick={()=>window.print()} className='mt-3 w-full rounded-2xl bg-[#1a472a] text-white text-sm font-semibold py-3 hover:bg-[#2d5f3f] transition-all active:scale-95 flex items-center justify-center gap-2'><svg>download icon</svg> Download Card</button>. Add a <style> tag (using dangerouslySetInnerHTML or a useEffect that appends/removes a <style> element) with the rule: @media print { body > * { display: none !important; } #membership-card-print { display: block !important; position: fixed; top: 0; left: 0; } }.",
+    "7. Create app/members/dashboard/event-card/[registrationId]/page.tsx. 'use client'. Params: { registrationId:string } from useParams(). State: cardData{eventTitle,eventDate,eventLocation,fullName,membershipNumber,eventCardRef}|null, loading, error. useEffect: fetch GET /api/member/event-card/${registrationId}; handle 401->router.push('/login'), 403->setError('Payment required'), 404->setError('Card not found'). Render loading: full-screen Loader2. Render error: centered error message with 'Back to Dashboard' link. Render card: min-h-screen bg-[#ECEBE6] flex items-center justify-center. Center a card: rounded-3xl bg-[#1a472a] p-8 max-w-sm w-full text-white space-y-4 style={{backgroundImage:'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)',backgroundSize:'16px 16px'}}. Card content: logo Image, 'RSSSOSAA' + 'Events Card' subtitle, eventTitle (text-xl font-bold), date (formatted), location, divider line, member name + membership number (font-mono), event card ref in a monospace box (same style as membership number), Print/Save button. Add id='event-card-print' to the card div. Add @media print style (same pattern as step 6 but targeting #event-card-print). Add 'Back to Dashboard' Link above the card."
+  ],
+  "acceptance_criteria": [
+    "npm run build completes with zero TypeScript errors after all steps",
+    "Events tab in member dashboard fetches and displays Published events from /api/member/events",
+    "Register button for free events calls POST /api/member/events/[id]/register and refreshes the list",
+    "Register button for paid events redirects to Paystack authorizationUrl",
+    "Approved members see 'Registered ✓' badge and 'View Card' link after free registration",
+    "Membership card in My Application tab has a Download Card button that triggers window.print()",
+    "/members/dashboard/event-card/[registrationId] renders the event card page and has a Print/Save button"
+  ],
+  "verification": [
+    "npm run build — must complete with exit code 0 and no TypeScript errors",
+    "npm run lint — must pass without errors"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
