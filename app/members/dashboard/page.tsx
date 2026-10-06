@@ -121,40 +121,6 @@ function MemberDashboardContent() {
     { id: 'benefits', label: 'Benefits' },
   ];
 
-  /* ── Form required notice ─────────────────────────────────────── */
-  const FormRequiredNotice = () => (
-    <div className="rounded-3xl bg-[#F6F5F0] border border-white/60 shadow-xl shadow-black/5 p-8 text-center">
-      <FileText className="h-8 w-8 mx-auto mb-3 text-neutral-400" />
-      <p className="font-bold text-[#121417] mb-2">Membership Form Required</p>
-      <p className="text-sm text-neutral-600 mb-6">
-        Please fill in your membership registration form to access this section.
-      </p>
-      <Link
-        href="/register"
-        className="inline-flex items-center gap-2 rounded-full bg-[#1a472a] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#2d5f3f] transition-all active:scale-95"
-      >
-        Fill Registration Form <ArrowRight className="h-4 w-4" />
-      </Link>
-    </div>
-  );
-
-  /* ── Payment required notice ──────────────────────────────────── */
-  const PaymentRequiredNotice = () => (
-    <div className="rounded-3xl bg-[#F6F5F0] border border-white/60 shadow-xl shadow-black/5 p-8 text-center">
-      <CreditCard className="h-8 w-8 mx-auto mb-3 text-neutral-400" />
-      <p className="font-bold text-[#121417] mb-2">Payment Required</p>
-      <p className="text-sm text-neutral-600 mb-6">
-        Complete your membership fee payment to access all member sections.
-      </p>
-      <Link
-        href={`/register/payment?ref=${encodeURIComponent(member.applicationRef || '')}`}
-        className="inline-flex items-center gap-2 rounded-full bg-[#1a472a] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#2d5f3f] transition-all active:scale-95"
-      >
-        Pay Now <ArrowRight className="h-4 w-4" />
-      </Link>
-    </div>
-  );
-
   /* ── Status badge ─────────────────────────────────────────────── */
   const statusBadge = isApproved
     ? <span className="rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1">Approved</span>
@@ -284,9 +250,30 @@ function MemberDashboardContent() {
 
       /* MY APPLICATION ────────────────────────────────────────────── */
       case 'application': {
-        if (!profileComplete) return <FormRequiredNotice />;
         return (
           <div className="space-y-5">
+            {!profileComplete && (
+              <div className="rounded-3xl bg-[#1a472a] px-6 py-7 text-white"
+                style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 h-11 w-11 rounded-xl bg-white/10 flex items-center justify-center">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-lg">Complete Your Profile</p>
+                    <p className="text-sm text-white/70 mt-1 mb-4">
+                      Fill in your personal, school, and professional information to activate your membership application.
+                    </p>
+                    <Link
+                      href="/register"
+                      className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-bold text-[#1a472a] hover:bg-white/90 transition-all active:scale-95"
+                    >
+                      Fill Registration Form <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="rounded-3xl bg-[#F6F5F0] border border-white/60 shadow-xl shadow-black/5 overflow-hidden">
               <div className="px-6 py-4 border-b border-neutral-100">
                 <h2 className="font-bold text-[#121417]">Application Details</h2>
@@ -379,9 +366,6 @@ function MemberDashboardContent() {
 
       /* ACTIVITIES & EVENTS ───────────────────────────────────────── */
       case 'events': {
-        if (!profileComplete) return <FormRequiredNotice />;
-        if (!isPaid) return <PaymentRequiredNotice />;
-
         if (eventsLoading) {
           return (
             <div className="flex justify-center py-16">
@@ -473,8 +457,6 @@ function MemberDashboardContent() {
 
       /* MEMBERS ────────────────────────────────────────────────────── */
       case 'members': {
-        if (!profileComplete) return <FormRequiredNotice />;
-        if (!isPaid) return <PaymentRequiredNotice />;
         return (
           <div className="rounded-3xl bg-[#F6F5F0] border border-white/60 shadow-xl shadow-black/5 p-8">
             <h2 className="font-bold text-xl text-[#121417] mb-2">Member Directory</h2>
@@ -485,8 +467,6 @@ function MemberDashboardContent() {
 
       /* BENEFITS ───────────────────────────────────────────────────── */
       case 'benefits': {
-        if (!profileComplete) return <FormRequiredNotice />;
-        if (!isPaid) return <PaymentRequiredNotice />;
         return (
           <div className="space-y-4">
             <h2 className="font-bold text-xl text-[#121417]">Member Benefits</h2>
