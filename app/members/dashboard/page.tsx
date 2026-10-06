@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Suspense } from 'react';
 import {
   ArrowRight, CheckCircle, Clock, CreditCard,
   FileText, IdCard, Loader2, Lock, User, XCircle,
@@ -38,13 +39,34 @@ interface EventItem {
 
 type Tab = 'overview' | 'application' | 'events' | 'members' | 'benefits';
 
-export default function MemberDashboardPage() {
+function MemberDashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [member, setMember] = useState<MemberData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    const t = searchParams.get('tab');
+    return (['overview','application','events','members','benefits'].includes(t || '') ? t : 'overview') as Tab;
+  });
   const [events, setEvents] = useState<EventItem[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
+
+  // Sync tab from URL
+  useEffect(() => {
+    const t = searchParams.get('tab') as Tab | null;
+    if (t && ['overview','application','events','members','benefits'].includes(t)) {
+      setActiveTab(t);
+    }
+  }, [searchParams]);
+
+  const switchTab = useCallback((tab: Tab) => {
+    setActiveTab(tab);
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    window.history.pushState({}, '', url.toString());
+    // Dispatch a custom event so Navbar can react
+    window.dispatchEvent(new CustomEvent('dashboard-tab-change', { detail: tab }));
+  }, []);
 
   useEffect(() => {
     fetch('/api/member/me')
@@ -383,7 +405,6 @@ export default function MemberDashboardPage() {
           if (data.authorizationUrl) {
             window.location.href = data.authorizationUrl;
           } else if (data.success) {
-            // Free event — refresh list
             setEventsLoading(true);
             fetch('/api/member/events')
               .then(r => r.json())
@@ -391,7 +412,6 @@ export default function MemberDashboardPage() {
               .catch(() => {})
               .finally(() => setEventsLoading(false));
           }
-          // Suppress unused param warning
           void isFree;
         }
 
@@ -491,36 +511,19 @@ export default function MemberDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#ECEBE6] px-4 py-16">
-      <div className="max-w-2xl mx-auto space-y-5">
+    <div className="min-h-screen w-full bg-[#ECEBE6] flex flex-col overflow-hidden">
+      {/* Spacer for fixed navbar */}
+      <div className="h-20 flex-shrink-0" />
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-[#1a472a] flex items-center justify-center flex-shrink-0">
-              <User className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <p className="font-bold text-[#121417]">{member.fullName || member.email}</p>
-              <p className="text-xs text-neutral-500">{member.email}</p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="text-xs text-neutral-400 hover:text-red-500 transition-colors border border-neutral-200 rounded-full px-3 py-1.5"
-          >
-            Sign out
-          </button>
-        </div>
-
-        {/* Tab navigation */}
-        <div className="overflow-x-auto">
-          <div className="flex gap-1 min-w-max border-b border-neutral-200 pb-0">
+      {/* Desktop tab bar — hidden on mobile (tabs live in navbar hamburger menu) */}
+      <div className="hidden sm:block sticky top-20 z-30 bg-[#ECEBE6] border-b border-neutral-200 px-4">
+        <div className="max-w-5xl mx-auto overflow-x-auto">
+          <div className="flex gap-1 min-w-max pb-0">
             {tabs.map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1 px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap border-b-2 -mb-px ${
+                onClick={() => switchTab(tab.id)}
+                className={`px-5 py-3 text-sm font-medium transition-colors whitespace-nowrap border-b-2 -mb-px ${
                   activeTab === tab.id
                     ? 'border-[#1a472a] text-[#1a472a]'
                     : 'border-transparent text-neutral-500 hover:text-[#1a472a]'
@@ -531,13 +534,59 @@ export default function MemberDashboardPage() {
             ))}
           </div>
         </div>
-
-        {/* Tab content */}
-        <div>
-          {renderTabContent()}
-        </div>
-
       </div>
+
+      {/* Page content */}
+      <main className="flex-1 w-full overflow-y-auto">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-16">
+
+          {/* Header row */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-2xl bg-[#1a472a] flex items-center justify-center flex-shrink-0">
+                <User className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-[#121417] leading-tight">{member.fullName || member.email}</p>
+                <p className="text-xs text-neutral-500">{member.email}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {statusBadge}
+              <button
+                onClick={handleLogout}
+                className="text-xs text-neutral-400 hover:text-red-500 transition-colors border border-neutral-200 rounded-full px-3 py-1.5"
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile tab label */}
+          <div className="sm:hidden mb-4">
+            <p className="text-xs text-neutral-400 uppercase tracking-widest font-semibold">
+              {tabs.find(t => t.id === activeTab)?.label}
+            </p>
+          </div>
+
+          {/* Tab content */}
+          <div className="w-full">
+            {renderTabContent()}
+          </div>
+        </div>
+      </main>
     </div>
+  );
+}
+
+export default function MemberDashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#ECEBE6] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#1a472a]" />
+      </div>
+    }>
+      <MemberDashboardContent />
+    </Suspense>
   );
 }

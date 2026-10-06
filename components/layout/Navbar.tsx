@@ -15,6 +15,15 @@ const navLinks = [
 const EXCLUDED_PREFIXES = ["/admin", "/register"];
 const EXCLUDED_EXACT: string[] = [];
 
+// Dashboard tab definitions — shown in mobile menu when on /members/dashboard
+const DASHBOARD_TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'application', label: 'My Application' },
+  { id: 'events', label: 'Activities & Events' },
+  { id: 'members', label: 'Members' },
+  { id: 'benefits', label: 'Benefits' },
+];
+
 export default function Navbar() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -22,6 +31,26 @@ export default function Navbar() {
   const menuRef = useRef<HTMLDivElement>(null);
   const [member, setMember] = useState<{ fullName?: string; email?: string } | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const isDashboard = pathname === '/members/dashboard' || pathname.startsWith('/members/dashboard');
+
+  // Listen for tab changes from dashboard
+  useEffect(() => {
+    function onTabChange(e: Event) {
+      setActiveTab((e as CustomEvent).detail);
+    }
+    window.addEventListener('dashboard-tab-change', onTabChange);
+    return () => window.removeEventListener('dashboard-tab-change', onTabChange);
+  }, []);
+
+  // Sync tab from URL on dashboard load
+  useEffect(() => {
+    if (isDashboard) {
+      const params = new URLSearchParams(window.location.search);
+      const t = params.get('tab');
+      if (t) setActiveTab(t);
+    }
+  }, [isDashboard, pathname]);
 
   // Check member session on mount
   useEffect(() => {
@@ -241,57 +270,96 @@ export default function Navbar() {
                 }}
               >
                 <div className="px-4 pb-4 pt-3 grid grid-cols-1 gap-3">
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.label}
-                      href={link.href}
-                      onClick={() => setMenuOpen(false)}
-                      className={`px-4 py-8 font-body text-sm tracking-widest uppercase transition-all duration-200 text-center ${
-                        pathname === link.href || pathname.startsWith(link.href + "/")
-                          ? "text-[#1a472a] font-semibold"
-                          : "text-[#121417]/75 hover:text-[#1a472a]"
-                      }`}
-                      style={{
-                        background:
-                          pathname === link.href || pathname.startsWith(link.href + "/")
-                            ? "rgba(26, 71, 42, 0.1)"
-                            : "rgba(18, 20, 23, 0.03)",
-                        borderRadius: "10px",
-                      }}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                  {sessionChecked && (
-                    member ? (
-                      <Link
-                        href="/members/dashboard"
-                        onClick={() => setMenuOpen(false)}
-                        className="px-4 py-8 font-body text-sm tracking-widest uppercase text-[#1a472a] hover:text-[#2d5f3f] transition-colors flex items-center justify-center font-semibold text-center"
-                        style={{ background: "rgba(26,71,42,0.07)", borderRadius: "10px" }}
+                  {isDashboard ? (
+                    /* Dashboard mode — show tabs */
+                    <>
+                      <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-semibold px-1 pb-1">Dashboard</p>
+                      {DASHBOARD_TABS.map((tab) => (
+                        <button
+                          key={tab.id}
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('dashboard-tab-change', { detail: tab.id }));
+                            const url = new URL(window.location.href);
+                            url.searchParams.set('tab', tab.id);
+                            window.history.pushState({}, '', url.toString());
+                            setMenuOpen(false);
+                          }}
+                          className={`px-4 py-4 font-body text-sm tracking-wide transition-all duration-200 text-center rounded-xl w-full ${
+                            activeTab === tab.id
+                              ? 'text-[#1a472a] font-semibold bg-[rgba(26,71,42,0.1)]'
+                              : 'text-[#121417]/75 hover:text-[#1a472a] bg-[rgba(18,20,23,0.03)]'
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                      <div className="border-t border-neutral-200 my-1" />
+                      <button
+                        onClick={async () => {
+                          await fetch('/api/member/logout', { method: 'POST' });
+                          window.location.href = '/';
+                        }}
+                        className="px-4 py-4 font-body text-sm tracking-wide text-red-500 hover:text-red-600 transition-colors text-center rounded-xl bg-red-50 w-full"
                       >
-                        My Dashboard
-                      </Link>
-                    ) : (
-                      <>
+                        Sign out
+                      </button>
+                    </>
+                  ) : (
+                    /* Normal mode — show nav links + auth */
+                    <>
+                      {navLinks.map((link) => (
                         <Link
-                          href="/login"
+                          key={link.label}
+                          href={link.href}
                           onClick={() => setMenuOpen(false)}
-                          className="px-4 py-8 font-body text-sm tracking-widest uppercase text-[#121417]/75 hover:text-[#1a472a] transition-colors flex items-center justify-center font-semibold text-center"
-                          style={{ background: "rgba(18, 20, 23, 0.03)", borderRadius: "10px" }}
+                          className={`px-4 py-8 font-body text-sm tracking-widest uppercase transition-all duration-200 text-center ${
+                            pathname === link.href || pathname.startsWith(link.href + "/")
+                              ? "text-[#1a472a] font-semibold"
+                              : "text-[#121417]/75 hover:text-[#1a472a]"
+                          }`}
+                          style={{
+                            background:
+                              pathname === link.href || pathname.startsWith(link.href + "/")
+                                ? "rgba(26, 71, 42, 0.1)"
+                                : "rgba(18, 20, 23, 0.03)",
+                            borderRadius: "10px",
+                          }}
                         >
-                          Login
+                          {link.label}
                         </Link>
-                        <Link
-                          href="/signup"
-                          onClick={() => setMenuOpen(false)}
-                          className="px-4 py-8 font-body text-sm tracking-widest uppercase text-[#1a472a] hover:text-[#2d5f3f] transition-colors flex items-center justify-center font-semibold text-center"
-                          style={{ borderRadius: "10px" }}
-                        >
-                          Become a Member
-                        </Link>
-                      </>
-                    )
+                      ))}
+                      {sessionChecked && (
+                        member ? (
+                          <Link
+                            href="/members/dashboard"
+                            onClick={() => setMenuOpen(false)}
+                            className="px-4 py-8 font-body text-sm tracking-widest uppercase text-[#1a472a] hover:text-[#2d5f3f] transition-colors flex items-center justify-center font-semibold text-center"
+                            style={{ background: "rgba(26,71,42,0.07)", borderRadius: "10px" }}
+                          >
+                            My Dashboard
+                          </Link>
+                        ) : (
+                          <>
+                            <Link
+                              href="/login"
+                              onClick={() => setMenuOpen(false)}
+                              className="px-4 py-8 font-body text-sm tracking-widest uppercase text-[#121417]/75 hover:text-[#1a472a] transition-colors flex items-center justify-center font-semibold text-center"
+                              style={{ background: "rgba(18, 20, 23, 0.03)", borderRadius: "10px" }}
+                            >
+                              Login
+                            </Link>
+                            <Link
+                              href="/signup"
+                              onClick={() => setMenuOpen(false)}
+                              className="px-4 py-8 font-body text-sm tracking-widest uppercase text-[#1a472a] hover:text-[#2d5f3f] transition-colors flex items-center justify-center font-semibold text-center"
+                              style={{ borderRadius: "10px" }}
+                            >
+                              Become a Member
+                            </Link>
+                          </>
+                        )
+                      )}
+                    </>
                   )}
                 </div>
               </motion.div>
