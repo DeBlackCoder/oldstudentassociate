@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongodb';
 import Applicant from '@/lib/models/Applicant';
 import { validateMembershipNumber } from '@/lib/utils/reference-generator';
+import { visibleAccountFilter } from '@/lib/utils/account-visibility';
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest) {
 
     // Find approved member
     const member = await Applicant.findOne({
+      ...visibleAccountFilter,
       membershipNumber,
       status: 'Approved'
     }).select('fullName secondarySchool graduationYear membershipNumber status');

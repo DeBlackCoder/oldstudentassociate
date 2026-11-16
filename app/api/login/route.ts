@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongodb';
 import Applicant from '@/lib/models/Applicant';
+import { isHiddenAccount } from '@/lib/utils/account-visibility';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
       'applicationRef fullName email status membershipNumber paymentStatus paymentRef paidAt secondarySchool graduationYear submittedAt'
     );
 
-    if (!applicant) {
+    if (!applicant || isHiddenAccount(applicant.email)) {
       return NextResponse.json(
         { error: 'No record found with the provided application reference and email.' },
         { status: 404 }

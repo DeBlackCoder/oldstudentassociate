@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/utils/auth';
 import connectDB from '@/lib/db/mongodb';
 import Applicant from '@/lib/models/Applicant';
+import { submittedApplicationFilter } from '@/lib/registration/policy';
 
 export async function GET() {
   try {
@@ -22,17 +23,18 @@ export async function GET() {
       schools,
       recentApplications
     ] = await Promise.all([
-      Applicant.countDocuments(),
-      Applicant.countDocuments({ status: 'Pending' }),
-      Applicant.countDocuments({ status: 'Approved' }),
-      Applicant.countDocuments({ status: 'Rejected' }),
+      Applicant.countDocuments(submittedApplicationFilter),
+      Applicant.countDocuments({ ...submittedApplicationFilter, status: 'Pending' }),
+      Applicant.countDocuments({ ...submittedApplicationFilter, status: 'Approved' }),
+      Applicant.countDocuments({ ...submittedApplicationFilter, status: 'Rejected' }),
       Applicant.countDocuments({
+        ...submittedApplicationFilter,
         submittedAt: {
           $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
         }
       }),
-      Applicant.distinct('secondarySchool'),
-      Applicant.find()
+      Applicant.distinct('secondarySchool', submittedApplicationFilter),
+      Applicant.find(submittedApplicationFilter)
         .sort({ submittedAt: -1 })
         .limit(10)
         .select('applicationRef fullName secondarySchool status submittedAt')

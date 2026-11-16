@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongodb';
 import Member from '@/lib/models/Member';
 import { setMemberSession } from '@/lib/utils/member-auth';
+import { clearAdminSession } from '@/lib/utils/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     const member = await Member.findOne({ email: email.toLowerCase() }).select('+emailVerificationCode +emailVerificationExpiry');
 
-    if (!member) {
+    if (!member || member.isDeleted) {
       return NextResponse.json({ error: 'Account not found.' }, { status: 404 });
     }
 
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
     member.emailVerificationExpiry = undefined;
     await member.save();
 
+    await clearAdminSession();
     await setMemberSession(member._id.toString(), member.email);
 
     return NextResponse.json({ success: true });

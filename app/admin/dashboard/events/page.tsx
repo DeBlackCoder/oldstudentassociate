@@ -71,18 +71,11 @@ export default function AdminEventsPage() {
   const [error, setError] = useState('');
   const [formData, setFormData] = useState<FormData>(EMPTY_FORM);
 
-  const fetchEvents = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/admin/events');
-      const data = await res.json();
-      if (data.success) setEvents(data.events);
-    } catch {
-      setError('Failed to load events.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchEvents = useCallback(() => fetch('/api/admin/events')
+    .then(res => res.json())
+    .then(data => { if (data.success) setEvents(data.events); })
+    .catch(() => setError('Failed to load events.'))
+    .finally(() => setLoading(false)), []);
 
   useEffect(() => {
     fetchEvents();
@@ -117,6 +110,7 @@ export default function AdminEventsPage() {
 
       setFormData(EMPTY_FORM);
       setActiveTab('list');
+      setLoading(true);
       await fetchEvents();
     } catch {
       setError('An unexpected error occurred.');
@@ -135,6 +129,7 @@ export default function AdminEventsPage() {
         alert(data.error || 'Failed to delete event.');
         return;
       }
+      setLoading(true);
       await fetchEvents();
     } catch {
       alert('Failed to delete event.');
@@ -205,7 +200,7 @@ export default function AdminEventsPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="dashboard-light-surface w-full bg-white">
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                     {['Title', 'Date', 'Location', 'Fee', 'Status', 'Attendees', 'Actions'].map((h) => (

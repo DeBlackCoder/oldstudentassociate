@@ -15,7 +15,7 @@ export const personalInfoSchema = z.object({
   residentialAddress: z.string().min(10, 'Address must be at least 10 characters'),
   stateOfOrigin: z.string().min(2, 'Please select your state of origin'),
   lga: z.string().min(2, 'Please select your LGA'),
-  referredBy: z.string().optional(),
+  referredBy: z.string().trim().min(2, 'Please enter who referred you').max(100, 'Referral name must be at most 100 characters'),
 });
 
 export const schoolInfoSchema = z.object({
@@ -55,7 +55,10 @@ export const declarationSchema = z.object({
     message: 'You must agree to the declaration'
   }),
   signature: z.string().min(2, 'Please provide your signature'),
-  signatureDate: z.string()
+  signatureDate: z.string().refine(value => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(Date.parse(value))) return false;
+    return new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
+  }, 'Enter a valid declaration date')
 });
 
 export const completeRegistrationSchema = personalInfoSchema

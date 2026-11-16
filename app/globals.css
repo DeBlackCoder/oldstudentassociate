@@ -361,3 +361,22 @@
 .animate-slide-up { animation: slide-up 0.8s ease-out; }
 .animate-slide-up-delay { animation: slide-up 0.8s ease-out 0.2s both; }
 .animate-fade-in-delay { animation: fade-in 0.8s ease-out 0.4s both; }
+
+/* Dashboards share light content surfaces even inside the dark admin shell.
+   Scope the foreground to each white surface. Stop at a nested coloured
+   surface so green buttons, dark panels and status badges keep their own
+   readable foreground; a nested white surface starts a fresh scope. */
+@scope ([data-dashboard] :is(.bg-white, .dashboard-light-surface)) to (
+  [data-dashboard-surface="dark"],
+  [class^="bg-"]:not(.bg-white):not(.bg-transparent),
+  [class*=" bg-"]:not(.bg-white):not(.bg-transparent)
+) {
+  :scope,
+  :scope * {
+    color: #000;
+  }
+
+  :scope :where(input, textarea)::placeholder {
+    color: #525252;
+  }
+}

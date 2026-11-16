@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/utils/auth';
 import connectDB from '@/lib/db/mongodb';
 import Applicant from '@/lib/models/Applicant';
+import { isHiddenAccount, hiddenAccountIds, privateActorProjection } from '@/lib/utils/account-visibility';
 
 export async function GET(
   request: NextRequest,
@@ -18,13 +19,13 @@ export async function GET(
 
     const application = await Applicant.findById(id);
 
-    if (!application) {
+    if (!application || isHiddenAccount(application.email) || application.status === 'Saved' || application.paymentStatus !== 'paid') {
       return NextResponse.json({ error: 'Application not found' }, { status: 404 });
     }
 
     return NextResponse.json({
       success: true,
-      application
+      application: privateActorProjection(application.toObject(), (await hiddenAccountIds()).adminIds),
     });
   } catch (error) {
     console.error('Application fetch error:', error);

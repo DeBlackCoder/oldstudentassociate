@@ -1,3 +1,5 @@
+import nigeriaLGAsData from './nigeria-lgas.json';
+
 export const nigerianStates = [
   'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
   'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo',
@@ -6,12 +8,9 @@ export const nigerianStates = [
   'Sokoto', 'Taraba', 'Yobe', 'Zamfara', 'FCT'
 ];
 
-export const riversStateLGAs = [
-  'Abua/Odual', 'Ahoada East', 'Ahoada West', 'Akuku-Toru', 'Andoni', 'Asari-Toru',
-  'Bonny', 'Degema', 'Eleme', 'Emohua', 'Etche', 'Gokana', 'Ikwerre', 'Khana',
-  'Obio/Akpor', 'Ogba/Egbema/Ndoni', 'Ogu/Bolo', 'Okrika', 'Omuma', 'Opobo/Nkoro',
-  'Oyigbo', 'Port Harcourt', 'Tai'
-];
+// LGA data adapted from https://github.com/temikeezy/nigeria-geojson-data (MIT).
+export const nigerianLGAsByState: Record<string, string[]> = nigeriaLGAsData;
+export const riversStateLGAs = nigerianLGAsByState.Rivers;
 
 export const employmentTypes = [
   'Public Service',

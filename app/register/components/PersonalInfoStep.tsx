@@ -13,16 +13,17 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { RegistrationData } from '../page';
-import { nigerianStates, riversStateLGAs, validateNigerianPhone } from '@/lib/utils/nigeria-data';
+import { nigerianLGAsByState, nigerianStates, validateNigerianPhone } from '@/lib/utils/nigeria-data';
 
 interface PersonalInfoStepProps {
   data: RegistrationData;
   updateData: (data: Partial<RegistrationData>) => void;
   onNext: () => void;
   returnToReview?: boolean;
+  emailReadOnly?: boolean;
 }
 
-export default function PersonalInfoStep({ data, updateData, onNext, returnToReview }: PersonalInfoStepProps) {
+export default function PersonalInfoStep({ data, updateData, onNext, returnToReview, emailReadOnly }: PersonalInfoStepProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
@@ -43,6 +44,7 @@ export default function PersonalInfoStep({ data, updateData, onNext, returnToRev
     if (!data.residentialAddress || data.residentialAddress.length < 10) newErrors.residentialAddress = 'Please enter your complete residential address';
     if (!data.stateOfOrigin) newErrors.stateOfOrigin = 'Please select your state of origin';
     if (!data.lga) newErrors.lga = 'Please select your LGA';
+    if (!data.referredBy?.trim() || data.referredBy.trim().length < 2) newErrors.referredBy = 'Please enter who referred you';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -53,7 +55,9 @@ export default function PersonalInfoStep({ data, updateData, onNext, returnToRev
   };
 
   const getLGAs = () =>
-    data.stateOfOrigin === 'Rivers' ? riversStateLGAs : ['Please select Rivers State to see LGAs'];
+    Object.hasOwn(nigerianLGAsByState, data.stateOfOrigin)
+      ? nigerianLGAsByState[data.stateOfOrigin]
+      : [];
 
   return (
     <form onSubmit={handleSubmit}>
@@ -160,12 +164,14 @@ export default function PersonalInfoStep({ data, updateData, onNext, returnToRev
         <Input
           type="email"
           id="email"
+          readOnly={emailReadOnly}
           value={data.email}
           onChange={(e) => updateData({ email: e.target.value })}
           placeholder="your.email@example.com"
           aria-invalid={!!errors.email}
           className={cn('h-11 w-full', errors.email && 'border-destructive')}
         />
+        {emailReadOnly && <p className="mt-1 text-sm text-gray-600">Your registration uses the email on your signed-in account.</p>}
         {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
       </div>
 
@@ -234,16 +240,21 @@ export default function PersonalInfoStep({ data, updateData, onNext, returnToRev
       {/* Referred By */}
       <div className="mb-6">
         <Label htmlFor="referredBy" className="block text-sm font-semibold text-gray-700 mb-2">
-          Who referred you? <span className="text-gray-400 font-normal">(Optional)</span>
+          Who referred you? <span className="text-red-600">*</span>
         </Label>
         <Input
           id="referredBy"
           value={data.referredBy}
           onChange={(e) => updateData({ referredBy: e.target.value })}
           placeholder="Name of the person who referred you to RSSSOSAA"
-          className="h-11 w-full"
+          required
+          maxLength={100}
+          aria-invalid={!!errors.referredBy}
+          aria-describedby={errors.referredBy ? 'referredBy-error' : undefined}
+          className={cn('h-11 w-full', errors.referredBy && 'border-destructive')}
         />
         <p className="mt-1 text-sm text-gray-500">Help us know how you heard about us</p>
+        {errors.referredBy && <p id="referredBy-error" className="mt-1 text-sm text-red-600">{errors.referredBy}</p>}
       </div>
 
       <div className="mt-8 flex justify-end">

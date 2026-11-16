@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     await connectDB();
 
     const existing = await Member.findOne({ email: email.toLowerCase() });
-    if (existing && existing.emailVerified) {
+    if (existing && (existing.emailVerified || existing.isDeleted)) {
       return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 400 });
     }
 

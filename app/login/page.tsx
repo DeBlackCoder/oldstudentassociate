@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { LoginResponseError, readLoginResponse } from '@/lib/utils/login-response';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,27 +23,21 @@ export default function LoginPage() {
     try {
       const res = await fetch('/api/member/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        if (data.needsVerification) {
-          setNeedsVerification(true);
-          setError(data.error);
-        } else {
-          throw new Error(data.error || 'Login failed');
-        }
+      const data = await readLoginResponse(res);
+      if (!data.success) {
+        setNeedsVerification(data.needsVerification);
+        setError(data.error);
         return;
       }
-      // Admin gets redirected to admin dashboard
-      if (data.role === 'admin') {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/members/dashboard');
-      }
+      router.push('/members/dashboard');
+      router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof LoginResponseError
+        ? err.message
+        : 'Unable to connect to sign-in. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -92,6 +87,9 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="flex flex-col flex-1 gap-4">
             <input
               type="email"
+              autoComplete="email"
+              maxLength={254}
+              aria-label="Email address"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
@@ -102,6 +100,8 @@ export default function LoginPage() {
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                aria-label="Password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
@@ -118,13 +118,13 @@ export default function LoginPage() {
             </div>
 
             <div className="flex justify-between items-center -mt-1">
-              <Link href="/signup" className="text-xs text-[#1a472a] hover:underline font-medium">
+              <Link href="/forgot-password" className="text-xs text-[#1a472a] hover:underline font-medium">
                 Forgot Password?
               </Link>
             </div>
 
             {error && (
-              <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">
+              <div role="alert" className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">
                 {error}
                 {needsVerification && (
                   <> <Link href="/signup" className="font-semibold underline">Verify your email →</Link></>
@@ -143,8 +143,8 @@ export default function LoginPage() {
             <div className="mt-auto pt-6 text-center space-y-1">
               <p className="text-xs text-neutral-400">
                 Don&apos;t hesitate to contact us at{' '}
-                <a href="mailto:oldstudentassociation7@gmail.com" className="text-[#1a472a] hover:underline">
-                  oldstudentassociation7@gmail.com
+                <a href="mailto:oldstudentassociation30@gmail.com" className="text-[#1a472a] hover:underline">
+                  oldstudentassociation30@gmail.com
                 </a>
               </p>
               <p className="text-xs text-neutral-400">

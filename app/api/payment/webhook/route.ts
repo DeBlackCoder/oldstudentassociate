@@ -1,53 +1,42 @@
 export const dynamic = 'force-dynamic';
-
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import connectDB from '@/lib/db/mongodb';
-import Applicant from '@/lib/models/Applicant';
+import { HttpError } from '@/lib/community/server';
+import { confirmDuesTransaction } from '@/lib/payments/server';
+import { confirmWelfareTransaction } from '@/lib/payments/welfare';
+import { confirmMembershipTransaction } from '@/lib/payments/membership';
+import { confirmEventTransaction } from '@/lib/payments/events';
+import { notifyMembershipPayment } from '@/lib/payments/notifications';
 
 export async function POST(request: NextRequest) {
+  const secret = process.env.PAYSTACK_SECRET_KEY;
+  if (!secret) return NextResponse.json({ error: 'Paystack is not configured' }, { status: 503 });
+  const raw = await request.text(), signature = request.headers.get('x-paystack-signature') || '';
+  const hash = createHmac('sha512', secret).update(raw).digest('hex');
+  if (!/^[a-f\d]{128}$/i.test(signature) || !timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(signature, 'hex'))) return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+  let event;
+  try { event = JSON.parse(raw); } catch { return NextResponse.json({ error: 'Invalid payload' }, { status: 400 }); }
   try {
-    const rawBody = await request.text();
-    const signature = request.headers.get('x-paystack-signature');
-    const secretKey = process.env.PAYSTACK_SECRET_KEY;
-
-    if (!secretKey) {
-      return NextResponse.json({ error: 'Not configured' }, { status: 500 });
-    }
-
-    // Verify webhook signature
-    const hash = crypto
-      .createHmac('sha512', secretKey)
-      .update(rawBody)
-      .digest('hex');
-
-    if (hash !== signature) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-    }
-
-    const event = JSON.parse(rawBody);
-
     if (event.event === 'charge.success') {
-      const { reference, amount, paid_at } = event.data;
-
+      if (!event.data || typeof event.data.reference !== 'string') return NextResponse.json({ error: 'Missing transaction reference' }, { status: 400 });
       await connectDB();
-
-      await Applicant.findOneAndUpdate(
-        { applicationRef: reference },
-        {
-          paymentStatus: 'paid',
-          paymentRef: reference,
-          paymentAmount: amount,
-          paidAt: new Date(paid_at || Date.now()),
-        }
-      );
+      if (event.data.reference.startsWith('DUES-')) await confirmDuesTransaction(event.data);
+      else if (event.data.reference.startsWith('WELFARE-')) await confirmWelfareTransaction(event.data);
+      else if (/^EVT[-/]/.test(event.data.reference)) await confirmEventTransaction(event.data);
+      else {
+        const result = await confirmMembershipTransaction(event.data);
+        if (result.changed) await notifyMembershipPayment(result.applicant);
+      }
     }
-
-    // Always return 200 to Paystack
-    return NextResponse.json({ received: true }, { status: 200 });
+    return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('Webhook error:', error);
-    // Still return 200 so Paystack doesn't retry indefinitely
-    return NextResponse.json({ received: true }, { status: 200 });
+    if (error instanceof HttpError && [400,404].includes(error.status)) {
+      console.error('Paystack transaction ignored:', error.message);
+      return NextResponse.json({ received: true, ignored: true });
+    }
+    // Retry transient database failures instead of silently losing payment confirmation.
+    console.error('Paystack webhook processing failed');
+    return NextResponse.json({ error: 'Payment confirmation temporarily unavailable' }, { status: 500 });
   }
 }

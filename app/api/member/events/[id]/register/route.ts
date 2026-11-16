@@ -103,7 +103,8 @@ export async function POST(_request: NextRequest, { params }: Params) {
       body: JSON.stringify({
         email: applicant.email,
         amount: event.registrationFee,
-        reference: eventCardRef,
+        reference: eventCardRef.replace(/\//g, '-'),
+        currency: 'NGN',
         callback_url: `${appUrl}/members/dashboard?tab=events&payment=success`,
         metadata: {
           eventId: id,
@@ -131,6 +132,8 @@ export async function POST(_request: NextRequest, { params }: Params) {
       email: applicant.email,
       membershipNumber: applicant.membershipNumber || '',
       paymentStatus: 'unpaid',
+      paymentAmount: event.registrationFee,
+      paymentRef: eventCardRef.replace(/\//g, '-'),
       eventCardRef,
     });
 

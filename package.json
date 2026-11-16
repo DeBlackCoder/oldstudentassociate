@@ -7,7 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "setup": "tsx scripts/setup-admin.ts"
+    "setup": "tsx scripts/setup-admin.ts",
+    "test:community": "tsx --test tests/community.test.ts",
+    "test:accounts": "tsx --test tests/admin-member.test.ts",
+    "test:payments": "tsx --test tests/payments.test.ts",
+    "test:passwords": "tsx --test tests/password-reset.test.ts",
+    "test:registration": "tsx --test tests/registration.test.ts",
+    "test:login": "tsx --test tests/login-response.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/utils/auth';
 import connectDB from '@/lib/db/mongodb';
 import Applicant from '@/lib/models/Applicant';
+import { submittedApplicationFilter } from '@/lib/registration/policy';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,10 +19,12 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
-    const query: Record<string, unknown> = {};
+    const query: Record<string, unknown> = { ...submittedApplicationFilter };
 
     if (status && status !== 'all') {
-      query.status = status;
+      const requestedStatus = ['Pending', 'Approved', 'Rejected'].find(value => value.toLowerCase() === status.toLowerCase());
+      if (!requestedStatus) return NextResponse.json({ error: 'Invalid application status' }, { status: 400 });
+      query.status = requestedStatus;
     }
 
     if (search) {

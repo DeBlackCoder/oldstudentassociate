@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongodb';
 import Applicant from '@/lib/models/Applicant';
+import { requireCommunityMember, readJson, routeError } from '@/lib/community/server';
+import { z } from 'zod';
+import { registrationFeeKobo } from '@/lib/registration/policy';
 
 export async function POST(request: NextRequest) {
   try {
-    const { applicationRef, email } = await request.json();
+    const member = await requireCommunityMember();
+    const { applicationRef, email } = z.object({ applicationRef: z.string().max(100), email: z.string().email() }).strict().parse(await readJson(request));
 
     if (!applicationRef || !email) {
       return NextResponse.json(
@@ -16,11 +20,12 @@ export async function POST(request: NextRequest) {
     await connectDB();
 
     const applicant = await Applicant.findOne({
+      _id: member.applicantId,
       applicationRef,
-      email: email.toLowerCase(),
+      email: member.email,
     });
 
-    if (!applicant) {
+    if (!member.applicantId || !applicant || email.toLowerCase() !== member.email.toLowerCase()) {
       return NextResponse.json(
         { error: 'Application not found. Check your reference and email.' },
         { status: 404 }
@@ -36,7 +41,8 @@ export async function POST(request: NextRequest) {
 
     const secretKey = process.env.PAYSTACK_SECRET_KEY;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const amountKobo = parseInt(process.env.MEMBERSHIP_FEE_KOBO || '200000');
+    const amountKobo = applicant.paymentExpectedAmount || registrationFeeKobo();
+    if (!Number.isSafeInteger(amountKobo) || amountKobo <= 0) return NextResponse.json({ error: 'Membership fee is not configured correctly.' }, { status: 503 });
 
     if (!secretKey) {
       return NextResponse.json(
@@ -45,6 +51,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    applicant.paymentExpectedAmount = amountKobo;
+    await applicant.save();
     const paystackRes = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
       headers: {
@@ -54,6 +62,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         email: applicant.email,
         amount: amountKobo,
+        currency: 'NGN',
         // Paystack only allows alphanumeric, dash, underscore — replace / with -
         reference: applicationRef.replace(/\//g, '-'),
         callback_url: `${appUrl}/register/payment/callback`,
@@ -80,9 +89,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Payment initialize error:', error);
-    return NextResponse.json(
-      { error: 'An error occurred while initializing payment.' },
-      { status: 500 }
-    );
+    return routeError(error);
   }
 }

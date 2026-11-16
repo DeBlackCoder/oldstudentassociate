@@ -8,6 +8,10 @@ import { useEffect, useRef, useState } from "react";
 
 const navLinks = [
   { label: "About", href: "/about" },
+  { label: "Live", href: "/live" },
+  { label: "Programmes", href: "/programmes" },
+  { label: "Welfare", href: "/welfare" },
+  { label: "Scholarships", href: "/scholarships" },
   { label: "Contact", href: "/contact" },
 ];
 
@@ -20,6 +24,10 @@ const DASHBOARD_TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'application', label: 'My Application' },
   { id: 'events', label: 'Activities & Events' },
+  { id: 'programmes', label: 'Programmes' },
+  { id: 'welfare', label: 'Welfare' },
+  { id: 'scholarships', label: 'Scholarships' },
+  { id: 'minutes', label: 'Meeting Minutes' },
   { id: 'members', label: 'Members' },
   { id: 'benefits', label: 'Benefits' },
 ];
@@ -28,7 +36,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const [member, setMember] = useState<{ fullName?: string; email?: string } | null>(null);
+  const [member, setMember] = useState<{ fullName?: string; email?: string; canAccessAdminPanel?: boolean } | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const isDashboard = pathname === '/members/dashboard' || pathname.startsWith('/members/dashboard');
@@ -98,7 +106,7 @@ export default function Navbar() {
       transition={{ duration: 0.5 }}
     >
       {/* Outer wrapper — provides the margin from screen edges */}
-      <div className={`px-4 sm:px-6 ${isDashboard ? 'w-[95%] sm:w-[98%] lg:w-[90%]' : 'w-[85%] sm:w-[90%] lg:w-[70%]'}`} style={{ paddingTop: '10px' }}>
+      <div className={`px-4 sm:px-6 ${isDashboard ? 'w-[95%] sm:w-[98%] lg:w-[90%]' : 'w-[95%] sm:w-[94%] xl:w-[90%] 2xl:w-[80%]'}`} style={{ paddingTop: '10px' }}>
         {/* Floating glass pill */}
         <div ref={menuRef} className="pointer-events-auto flex flex-col">
           {/* Pill bar */}
@@ -134,7 +142,7 @@ export default function Navbar() {
             </Link>
 
             {/* Desktop nav — shows tabs on dashboard, links elsewhere */}
-            <nav className="hidden sm:flex flex-nowrap items-center gap-x-1">
+            <nav className="hidden xl:flex flex-nowrap items-center gap-x-1">
               {isDashboard ? (
                 DASHBOARD_TABS.map((tab) => (
                   <button
@@ -184,7 +192,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => setMenuOpen((o) => !o)}
-                className="sm:hidden inline-flex items-center justify-center"
+                className="xl:hidden inline-flex items-center justify-center"
                 style={{ borderRadius: "8px", width: 38, height: 36 }}
                 aria-label={menuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={menuOpen}
@@ -212,16 +220,17 @@ export default function Navbar() {
               {sessionChecked && (
                 member ? (
                   <>
+                    {member.canAccessAdminPanel && <Link href="/admin/dashboard" className="hidden xl:flex items-center rounded-lg bg-[#1a472a]/10 px-3 py-2 text-xs font-semibold text-[#1a472a]">Admin Panel</Link>}
                     <Link
                       href="/members/dashboard"
-                      className="hidden sm:flex items-center gap-2 font-body text-sm font-semibold text-[#121417] tracking-wide px-6 py-3 hover:text-[#1a472a] transition-colors duration-300"
+                      className="hidden xl:flex items-center gap-2 font-body text-sm font-semibold text-[#121417] tracking-wide px-6 py-3 hover:text-[#1a472a] transition-colors duration-300"
                     >
                       My Dashboard
                     </Link>
-                    <div className="hidden sm:block w-px h-8 bg-[#121417] opacity-30" style={{ borderLeft: '3px double #121417' }} />
+                    <div className="hidden xl:block w-px h-8 bg-[#121417] opacity-30" style={{ borderLeft: '3px double #121417' }} />
                     <Link
                       href="/members/dashboard"
-                      className="hidden sm:flex items-center justify-center h-8 w-8 rounded-full bg-[#1a472a] text-white text-xs font-bold"
+                      className="hidden xl:flex items-center justify-center h-8 w-8 rounded-full bg-[#1a472a] text-white text-xs font-bold"
                       title={member.fullName || member.email}
                     >
                       {(member.fullName || member.email || 'U')
@@ -232,14 +241,14 @@ export default function Navbar() {
                   <>
                     <Link
                       href="/login"
-                      className="hidden sm:flex items-center gap-2 font-body text-sm font-semibold text-[#121417] tracking-wide px-6 py-3 hover:text-[#1a472a] transition-colors duration-300"
+                      className="hidden xl:flex items-center gap-2 font-body text-sm font-semibold text-[#121417] tracking-wide px-6 py-3 hover:text-[#1a472a] transition-colors duration-300"
                     >
                       Login
                     </Link>
-                    <div className="hidden sm:block w-px h-8 bg-[#121417] opacity-30" style={{ borderLeft: '3px double #121417' }} />
+                    <div className="hidden xl:block w-px h-8 bg-[#121417] opacity-30" style={{ borderLeft: '3px double #121417' }} />
                     <Link
                       href="/signup"
-                      className="hidden sm:flex items-center gap-2 font-body text-sm font-semibold text-[#1a472a] tracking-wide px-8 py-3 hover:text-[#2d5f3f] transition-all duration-300"
+                      className="hidden xl:flex items-center gap-2 font-body text-sm font-semibold text-[#1a472a] tracking-wide px-8 py-3 hover:text-[#2d5f3f] transition-all duration-300"
                       style={{ borderRadius: "8px" }}
                     >
                       Become a Member
@@ -261,7 +270,7 @@ export default function Navbar() {
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.25, ease: "easeOut" }}
-                className="overflow-hidden sm:hidden"
+                className="overflow-hidden xl:hidden"
                 style={{
                   marginTop: '9px',
                   background: "rgba(255, 255, 255, 0.99)",
@@ -296,6 +305,7 @@ export default function Navbar() {
                           {tab.label}
                         </button>
                       ))}
+                      {member?.canAccessAdminPanel && <Link href="/admin/dashboard" onClick={() => setMenuOpen(false)} className="rounded-xl bg-[#1a472a]/10 px-4 py-3 text-center text-sm font-semibold text-[#1a472a]">Admin Panel</Link>}
                       <div className="border-t border-neutral-200 my-1" />
                       <button
                         onClick={async () => {
@@ -333,6 +343,8 @@ export default function Navbar() {
                       ))}
                       {sessionChecked && (
                         member ? (
+                          <>
+                          {member.canAccessAdminPanel && <Link href="/admin/dashboard" onClick={() => setMenuOpen(false)} className="flex items-center justify-center rounded-xl bg-[#1a472a]/10 px-4 py-3 text-sm font-semibold text-[#1a472a]">Admin Panel</Link>}
                           <Link
                             href="/members/dashboard"
                             onClick={() => setMenuOpen(false)}
@@ -341,6 +353,7 @@ export default function Navbar() {
                           >
                             My Dashboard
                           </Link>
+                          </>
                         ) : (
                           <>
                             <Link

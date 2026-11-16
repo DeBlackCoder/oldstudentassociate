@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, FileText, Users, School,
-  BarChart3, LogOut, Menu, X, Building2,
+  BarChart3, LogOut, Menu, X, Building2, CreditCard,
   ChevronLeft, ChevronRight, Bell, Search, UserCog, MessageSquare, CalendarDays,
 } from 'lucide-react';
 
@@ -15,12 +15,19 @@ const navItems = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/dashboard/applications', label: 'Applications', icon: FileText },
   { href: '/admin/dashboard/members', label: 'Members', icon: Users },
+  { href: '/admin/dashboard/payments', label: 'Payments', icon: CreditCard },
   { href: '/admin/dashboard/events', label: 'Events', icon: CalendarDays },
+  { href: '/admin/dashboard/community', label: 'Programmes', icon: CalendarDays },
+  { href: '/admin/dashboard/welfare', label: 'Welfare', icon: Users },
+  { href: '/admin/dashboard/scholarships', label: 'Scholarships', icon: School },
+  { href: '/admin/dashboard/minutes', label: 'Meeting Minutes', icon: FileText },
   { href: '/admin/dashboard/schools', label: 'Schools', icon: School },
   { href: '/admin/dashboard/reports', label: 'Reports', icon: BarChart3 },
   { href: '/admin/dashboard/bank-account', label: 'Bank Account', icon: Building2 },
   { href: '/admin/dashboard/messages', label: 'Messages', icon: MessageSquare },
   { href: '/admin/dashboard/admins', label: 'Admin Users', icon: UserCog },
+  { href: '/admin/dashboard/users', label: 'All user accounts', icon: Users },
+  { href: '/admin/dashboard/activity', label: 'Portal activity', icon: Bell },
 ];
 
 export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
@@ -39,6 +46,9 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
   const notifRef = useRef<HTMLDivElement>(null);
   const [adminName, setAdminName] = useState('Administrator');
   const [adminEmail, setAdminEmail] = useState('');
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [canViewActivity, setCanViewActivity] = useState(false);
+  const availableNavItems = navItems.filter(item => (item.href !== '/admin/dashboard/users' || isSuperAdmin) && (item.href !== '/admin/dashboard/activity' || canViewActivity));
 
   // Close profile dropdown on outside click
   useEffect(() => {
@@ -58,6 +68,8 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
       .then(data => {
         setAdminName(data.admin?.fullName || 'Administrator');
         setAdminEmail(data.admin?.email || '');
+        setIsSuperAdmin(data.admin?.role === 'Super Admin');
+        setCanViewActivity(data.admin?.canViewActivity === true);
       })
       .catch(() => router.push('/login'));
   }, [router]);
@@ -104,10 +116,10 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
   }
 
   const initials = adminName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
-  const currentPage = navItems.find(n => pathname === n.href || (n.href !== '/admin/dashboard' && pathname.startsWith(n.href)));
+  const currentPage = availableNavItems.find(n => pathname === n.href || (n.href !== '/admin/dashboard' && pathname.startsWith(n.href)));
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50" style={{ background: '#0f1117' }}>
+    <div data-dashboard="admin" className="flex h-screen overflow-hidden bg-gray-50" style={{ background: '#0f1117' }}>
 
       {/* ── Desktop Sidebar ─────────────────────────────────────── */}
       <motion.aside
@@ -152,7 +164,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
 
         {/* Nav items */}
         <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
-          {navItems.map(({ href, label, icon: Icon }) => {
+          {availableNavItems.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || (href !== '/admin/dashboard' && pathname.startsWith(href));
             return (
               <Link key={href} href={href} title={collapsed ? label : undefined}>
@@ -267,7 +279,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
               </div>
 
               <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-                {navItems.map(({ href, label, icon: Icon }) => {
+                {availableNavItems.map(({ href, label, icon: Icon }) => {
                   const active = pathname === href || (href !== '/admin/dashboard' && pathname.startsWith(href));
                   return (
                     <Link key={href} href={href} onClick={() => setMobileOpen(false)}>
@@ -284,6 +296,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
               </nav>
 
               <div className="p-3 border-t flex-shrink-0 space-y-1" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+                <Link href="/members/dashboard" onClick={() => setMobileOpen(false)} className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-emerald-300 hover:bg-white/[0.04]"><Users className="h-4 w-4" />My Account</Link>
                 <Link
                   href="/"
                   onClick={() => setMobileOpen(false)}
@@ -337,6 +350,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
           </div>
 
           {/* Back to site — desktop only (mobile has it in the sidebar) */}
+          <Link href="/members/dashboard" className="flex shrink-0 items-center gap-1.5 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-xs font-semibold text-emerald-200 hover:bg-emerald-400/10"><Users className="h-3.5 w-3.5" />My Account</Link>
           <Link
             href="/"
             className="hidden sm:flex items-center gap-1.5 text-xs text-white/30 hover:text-white/70 transition-colors border border-white/[0.08] rounded-lg px-3 h-7 hover:border-white/20 flex-shrink-0"
@@ -454,6 +468,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
 
                       {/* Menu items */}
                       <div className="p-1.5">
+                        <Link href="/members/dashboard" onClick={() => setProfileOpen(false)} className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-emerald-200 hover:bg-white/[0.05]"><Users className="h-3.5 w-3.5" />My Account</Link>
                         <Link
                           href="/admin/dashboard"
                           onClick={() => setProfileOpen(false)}

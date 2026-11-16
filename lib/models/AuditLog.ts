@@ -22,6 +22,11 @@ const AuditLogSchema = new Schema<IAuditLog>({
   timestamp: { type: Date, default: Date.now, index: true }
 });
 
+AuditLogSchema.post('save', async function (record) {
+  const { recordActivity } = await import('@/lib/utils/activity');
+  await recordActivity({ action: record.action, actorEmail: record.adminName, actorId: String(record.adminId), targetId: record.targetId, details: record.details });
+});
+
 const AuditLog: Model<IAuditLog> = models.AuditLog || mongoose.model<IAuditLog>('AuditLog', AuditLogSchema);
 
 export default AuditLog;

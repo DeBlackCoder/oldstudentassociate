@@ -16,7 +16,7 @@ function CallbackContent() {
   const [applicationRef, setApplicationRef] = useState('');
 
   useEffect(() => {
-    if (!reference) { setStatus('failed'); return; }
+    if (!reference) return;
 
     fetch(`/api/payment/verify?reference=${encodeURIComponent(reference)}`)
       .then(r => r.json())
@@ -27,13 +27,13 @@ function CallbackContent() {
           setApplicationRef(data.applicant?.applicationRef || reference);
         } else {
           setStatus('failed');
-          setApplicationRef(reference);
+          setApplicationRef(data.applicant?.applicationRef || '');
         }
       })
       .catch(() => setStatus('failed'));
   }, [reference]);
 
-  if (status === 'loading') {
+  if (status === 'loading' && reference) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-4">
         <Loader2 className="h-10 w-10 animate-spin text-[#1a472a]" />
@@ -59,7 +59,7 @@ function CallbackContent() {
         <div className="w-full rounded-2xl bg-emerald-50 border border-emerald-200 px-5 py-4 text-left space-y-2">
           <p className="text-sm font-semibold text-emerald-800">What happens next?</p>
           <ul className="text-sm text-emerald-700 space-y-1 list-disc list-inside">
-            <li>Your application is now under review by our team</li>
+            <li>Your saved form has been submitted automatically for review</li>
             <li>You will be contacted once your membership is approved</li>
             <li>Use your application reference to track your status</li>
           </ul>
@@ -73,10 +73,10 @@ function CallbackContent() {
         )}
 
         <Link
-          href="/login"
+          href="/members/dashboard?tab=application"
           className="w-full flex h-12 items-center justify-center gap-2 rounded-full bg-[#1a472a] text-white font-semibold text-sm hover:bg-[#2d5f3f] transition-all active:scale-95"
         >
-          Check Application Status <ArrowRight className="h-4 w-4" />
+          View Dashboard <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
     );
@@ -89,12 +89,12 @@ function CallbackContent() {
         <XCircle className="h-10 w-10 text-red-500" />
       </div>
       <div>
-        <h2 className="text-2xl font-bold text-[#121417]">Payment Failed</h2>
-        <p className="text-neutral-600 mt-1">Your payment could not be processed.</p>
+        <h2 className="text-2xl font-bold text-[#121417]">Payment Not Confirmed</h2>
+        <p className="text-neutral-600 mt-1">We could not confirm your payment yet. Your registration form stays saved.</p>
       </div>
 
       <div className="w-full rounded-2xl bg-red-50 border border-red-200 px-5 py-4 text-sm text-red-700">
-        This could be due to insufficient funds, a cancelled transaction, or a network issue. Please try again.
+        Check your payment status in the dashboard before making another payment. If money was debited, allow the payment confirmation to update or contact support.
       </div>
 
       <div className="flex flex-col sm:flex-row w-full gap-3">
@@ -107,7 +107,7 @@ function CallbackContent() {
           </Link>
         )}
         <Link
-          href="/login"
+          href="/members/dashboard?tab=registration-payment"
           className="flex-1 h-12 flex items-center justify-center rounded-full border-2 border-[#1a472a] text-[#1a472a] font-semibold text-sm hover:bg-[#1a472a] hover:text-white transition-all active:scale-95"
         >
           Check Status

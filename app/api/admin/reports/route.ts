@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/utils/auth';
 import connectDB from '@/lib/db/mongodb';
 import Applicant from '@/lib/models/Applicant';
+import { submittedApplicationFilter } from '@/lib/registration/policy';
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const session = await getAdminSession();
     if (!session) {
@@ -24,7 +25,7 @@ export async function GET(_request: NextRequest) {
     ] = await Promise.all([
       // 1. Applications by month (last 12 months)
       Applicant.aggregate([
-        { $match: { submittedAt: { $gte: twelveMonthsAgo } } },
+        { $match: { ...submittedApplicationFilter, submittedAt: { $gte: twelveMonthsAgo } } },
         {
           $group: {
             _id: {
@@ -58,6 +59,7 @@ export async function GET(_request: NextRequest) {
 
       // 2. Top 10 schools by applicant count
       Applicant.aggregate([
+        { $match: submittedApplicationFilter },
         {
           $group: {
             _id: '$secondarySchool',
@@ -71,6 +73,7 @@ export async function GET(_request: NextRequest) {
 
       // 3. By employment type
       Applicant.aggregate([
+        { $match: submittedApplicationFilter },
         {
           $group: {
             _id: '$employmentType',
@@ -83,6 +86,7 @@ export async function GET(_request: NextRequest) {
 
       // 4. By graduation decade
       Applicant.aggregate([
+        { $match: submittedApplicationFilter },
         {
           $bucket: {
             groupBy: '$graduationYear',
@@ -95,6 +99,7 @@ export async function GET(_request: NextRequest) {
 
       // 5. Gender split
       Applicant.aggregate([
+        { $match: submittedApplicationFilter },
         {
           $group: {
             _id: '$gender',

@@ -1,6 +1,7 @@
 import mongoose, { Schema, models, Model } from 'mongoose';
 
 export interface IApplicant {
+  memberId?: mongoose.Types.ObjectId;
   // Personal Information
   fullName: string;
   dateOfBirth: Date;
@@ -37,22 +38,26 @@ export interface IApplicant {
   paymentStatus: 'unpaid' | 'paid' | 'failed';
   paymentRef?: string;
   paymentAmount?: number;
+  paymentExpectedAmount?: number;
+  paymentMethod?: 'paystack' | 'bank' | 'admin';
   paidAt?: Date;
 
   // Application Status
   applicationRef: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
+  status: 'Saved' | 'Pending' | 'Approved' | 'Rejected';
+  savedAt?: Date;
   membershipNumber?: string;
   adminRemarks?: string;
   
   // Metadata
-  submittedAt: Date;
+  submittedAt?: Date;
   verifiedAt?: Date;
   verifiedBy?: mongoose.Types.ObjectId;
   referredBy?: string;
 }
 
 const ApplicantSchema = new Schema<IApplicant>({
+  memberId: { type: Schema.Types.ObjectId, ref: 'Member', unique: true, sparse: true },
   // Personal Information
   fullName: { type: String, required: true, index: true },
   dateOfBirth: { type: Date, required: true },
@@ -94,25 +99,25 @@ const ApplicantSchema = new Schema<IApplicant>({
   paymentStatus: { type: String, enum: ['unpaid', 'paid', 'failed'], default: 'unpaid', index: true },
   paymentRef: { type: String, sparse: true },
   paymentAmount: { type: Number },
+  paymentExpectedAmount: { type: Number },
+  paymentMethod: { type: String, enum: ['paystack', 'bank', 'admin'] },
   paidAt: { type: Date },
 
   // Application Status
   applicationRef: { type: String, required: true, unique: true, index: true },
-  status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending', index: true },
+  status: { type: String, enum: ['Saved', 'Pending', 'Approved', 'Rejected'], default: 'Saved', index: true },
+  savedAt: { type: Date },
   membershipNumber: { type: String, unique: true, sparse: true, index: true },
   adminRemarks: { type: String },
 
   // Metadata
-  submittedAt: { type: Date, default: Date.now, index: true },
+  submittedAt: { type: Date, index: true },
   verifiedAt: { type: Date },
   verifiedBy: { type: Schema.Types.ObjectId, ref: 'Admin' },
   referredBy: { type: String },
 }, {
   timestamps: true
 });
-
-// Phone number index (non-unique for testing)
-ApplicantSchema.index({ phoneNumber: 1 }, { sparse: true });
 
 const Applicant: Model<IApplicant> = models.Applicant || mongoose.model<IApplicant>('Applicant', ApplicantSchema);
 

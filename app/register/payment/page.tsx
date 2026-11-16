@@ -27,30 +27,28 @@ function PaymentContent() {
   const [bankAccount, setBankAccount] = useState<BankAccount | null>(null);
   const [copied, setCopied] = useState('');
   const [activeTab, setActiveTab] = useState<'paystack' | 'transfer'>('paystack');
+  const [registrationFeeKobo, setRegistrationFeeKobo] = useState(200_000);
+  const [canPay, setCanPay] = useState(false);
 
-  const amountFormatted = '₦2,000';
+  const amountFormatted = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 2 }).format(registrationFeeKobo / 100);
 
   useEffect(() => {
-    if (!ref) { setFetching(false); return; }
+    if (!ref) return;
 
     Promise.all([
-      fetch(`/api/member/status?ref=${encodeURIComponent(ref)}`).then(r => r.json()),
-      fetch('/api/bank-account').then(r => r.json()),
-      fetch('/api/member/me').then(r => r.ok ? r.json() : null).catch(() => null),
-    ]).then(([memberData, bankData, meData]) => {
-      if (memberData.success) {
-        setApplicantName(memberData.fullName || '');
-        // email comes from status route now; fall back to /me if empty
-        setEmail(memberData.email || meData?.member?.email || '');
-        if (memberData.paymentStatus === 'paid') setAlreadyPaid(true);
-      } else if (meData?.member?.email) {
-        // logged-in user but status lookup failed — still grab their email
-        setEmail(meData.member.email);
-      }
-      if (bankData.success && bankData.account) {
+      fetch('/api/member/me', { cache: 'no-store' }).then(async response => { const data = await response.json(); if (!response.ok || !data.success) throw new Error(response.status === 401 ? 'Sign in to continue with your registration payment.' : data.error || 'Your registration payment could not be loaded.'); return data.member; }),
+      fetch('/api/bank-account').then(r => r.json()).catch(() => null),
+    ]).then(([memberData, bankData]) => {
+      if (!memberData.profileComplete || memberData.applicationRef !== ref) throw new Error('Complete and save your registration form, then open its payment tab in your dashboard.');
+      setApplicantName(memberData.fullName || '');
+      setEmail(memberData.email);
+      setRegistrationFeeKobo(memberData.registrationFeeKobo || 200_000);
+      setAlreadyPaid(memberData.paymentStatus === 'paid');
+      setCanPay(memberData.paymentStatus !== 'paid');
+      if (bankData?.success && bankData.account) {
         setBankAccount(bankData.account);
       }
-    }).catch(() => {}).finally(() => setFetching(false));
+    }).catch(reason => setError(reason instanceof Error ? reason.message : 'Your payment details could not be loaded.')).finally(() => setFetching(false));
   }, [ref]);
 
   function copyToClipboard(text: string, field: string) {
@@ -61,7 +59,7 @@ function PaymentContent() {
   }
 
   async function handlePay() {
-    if (!ref) return;
+    if (!ref || !canPay) return;
     setLoading(true);
     setError('');
     try {
@@ -96,6 +94,8 @@ function PaymentContent() {
     );
   }
 
+  if (!canPay && !alreadyPaid) return <div className="space-y-4 py-8 text-center"><p role="alert" className="text-sm text-red-800">{error || 'Your registration payment is unavailable.'}</p><Link href="/members/dashboard?tab=registration-payment" className="font-semibold text-[#1a472a] underline">Return to registration payment</Link></div>;
+
   if (alreadyPaid) {
     return (
       <div className="text-center py-8 space-y-4">
@@ -105,9 +105,9 @@ function PaymentContent() {
           </div>
         </div>
         <h2 className="text-2xl font-bold text-[#121417]">Already Paid</h2>
-        <p className="text-neutral-600">Your membership fee has already been received.</p>
+        <p className="text-neutral-600">Your membership fee has been received and your saved form was submitted automatically.</p>
         <Link
-          href="/login"
+          href="/members/dashboard?tab=application"
           className="inline-flex items-center gap-2 rounded-full bg-[#1a472a] px-8 py-3 text-sm font-semibold text-white hover:bg-[#2d5f3f] transition-all"
         >
           Check Application Status <ArrowRight className="h-4 w-4" />
@@ -126,6 +126,7 @@ function PaymentContent() {
         <p className="text-5xl font-bold">{amountFormatted}</p>
         <p className="text-xs text-white/60 mt-1.5">One-time registration fee</p>
       </div>
+      <div className="rounded-2xl border border-neutral-200 bg-white px-5 py-4 text-sm leading-6 text-black"><p className="font-semibold">{applicantName ? `${applicantName}, your form is saved.` : 'Your form is saved.'}</p><p className="mt-1">It will be submitted automatically when your registration payment is confirmed.</p><Link href="/members/dashboard?tab=edit-form" className="mt-2 inline-block font-semibold underline">Edit saved form</Link></div>
 
       {/* Application ref */}
       <div className="rounded-2xl bg-white border border-neutral-100 px-5 py-3 flex items-center justify-between">
@@ -184,7 +185,7 @@ function PaymentContent() {
             }
           </button>
           <p className="text-center text-xs text-neutral-400">
-            You will be redirected to Paystack's secure checkout.
+            You will be redirected to Paystack&apos;s secure checkout.
           </p>
         </div>
       )}
@@ -234,21 +235,21 @@ function PaymentContent() {
 
               <div className="rounded-2xl bg-neutral-50 border border-neutral-100 px-5 py-4 text-xs text-neutral-500 space-y-1">
                 <p className="font-semibold text-neutral-600">After transferring:</p>
-                <p>Our team will verify your payment within <strong>1–2 business days</strong> and update your application status. You can check your status at any time via the member portal.</p>
+                <p>An admin will check the bank statement and confirm your payment. Your saved form is then submitted automatically for review. You can check payment status in your dashboard.</p>
               </div>
 
               <Link
-                href="/login"
+                href="/members/dashboard?tab=registration-payment"
                 className="w-full h-11 flex items-center justify-center gap-2 rounded-full border-2 border-[#1a472a] text-[#1a472a] font-semibold text-sm hover:bg-[#1a472a] hover:text-white transition-all active:scale-95"
               >
-                Check Application Status
+                View payment status
               </Link>
             </>
           ) : (
             <div className="rounded-2xl bg-neutral-50 border border-neutral-100 px-6 py-8 text-center">
               <Building2 className="h-8 w-8 text-neutral-300 mx-auto mb-3" />
               <p className="text-sm font-semibold text-neutral-600">Bank details not available</p>
-              <p className="text-xs text-neutral-400 mt-1">Please use the online payment option or contact us at <a href="mailto:oldstudentassociation7@gmail.com" className="text-[#1a472a] hover:underline">oldstudentassociation7@gmail.com</a></p>
+              <p className="text-xs text-neutral-400 mt-1">Please use the online payment option or contact us at <a href="mailto:oldstudentassociation30@gmail.com" className="text-[#1a472a] hover:underline">oldstudentassociation30@gmail.com</a></p>
             </div>
           )}
         </div>

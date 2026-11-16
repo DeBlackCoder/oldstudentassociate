@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminSession } from '@/lib/utils/auth';
 import connectDB from '@/lib/db/mongodb';
 import EventRegistration from '@/lib/models/EventRegistration';
+import { visibleAccountFilter } from '@/lib/utils/account-visibility';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -15,7 +16,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
     await connectDB();
 
     const { id } = await params;
-    const registrations = await EventRegistration.find({ eventId: id })
+    const registrations = await EventRegistration.find({ ...visibleAccountFilter, eventId: id })
       .sort({ registeredAt: -1 })
       .lean();
 

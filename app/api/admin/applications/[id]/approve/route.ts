@@ -5,6 +5,7 @@ import connectDB from '@/lib/db/mongodb';
 import Applicant from '@/lib/models/Applicant';
 import AuditLog from '@/lib/models/AuditLog';
 import { generateMembershipNumber } from '@/lib/utils/reference-generator';
+import { isHiddenAccount } from '@/lib/utils/account-visibility';
 
 export async function POST(
   request: NextRequest,
@@ -15,6 +16,7 @@ export async function POST(
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (session.role === 'Verifier') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     const { remarks } = await request.json();
     const { id } = await params;
@@ -23,7 +25,7 @@ export async function POST(
 
     const application = await Applicant.findById(id);
 
-    if (!application) {
+    if (!application || isHiddenAccount(application.email)) {
       return NextResponse.json({ error: 'Application not found' }, { status: 404 });
     }
 

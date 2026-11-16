@@ -1,0 +1,61 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import { CheckCircle2, HeartHandshake, Loader2, Plus, RefreshCw, Search } from 'lucide-react';
+import AdminPaymentEditor, { adminPaymentInput } from './AdminPaymentEditor';
+import PaymentStatus from './PaymentStatus';
+import { formatNaira, type AdminPaymentMember, type WelfareFund, type WelfarePayment } from './types';
+import { paymentResponse } from './request';
+
+interface AdminWelfareResponse { funds: WelfareFund[]; payments: WelfarePayment[]; members: AdminPaymentMember[]; canReview: boolean }
+export default function AdminWelfarePayments() {
+  const [data, setData] = useState<AdminWelfareResponse | null>(null);
+  const [fundId, setFundId] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('');
+  const [selected, setSelected] = useState<{ member: AdminPaymentMember; payment: WelfarePayment } | null>(null);
+  const [editingFund, setEditingFund] = useState<{ id?: string; title: string; description: string; amount: string; isActive: boolean } | null>(null);
+  const load = useCallback(() => fetch('/api/admin/welfare-payments', { cache: 'no-store' })
+    .then(response => paymentResponse<AdminWelfareResponse>(response))
+    .then(next => {
+      setData(next); setError(''); setFundId(previous => next.funds.some(item => item._id === previous) ? previous : next.funds.find(item => item.isActive)?._id || next.funds[0]?._id || '');
+    })
+    .catch(reason => setError(reason instanceof Error ? reason.message : 'Unable to load welfare payments.'))
+    .finally(() => setLoading(false)), []);
+  useEffect(() => { void load(); }, [load]);
+  const fund = data?.funds.find(item => item._id === fundId);
+  const members = (data?.members || []).map(member => {
+    const all = (data?.payments || []).filter(payment => payment.memberId === member.id);
+    const payment = all.find(item => item.fundId === fundId) || { _id: '', fundId, memberId: member.id, status: 'Unpaid' as const, amountKobo: fund?.amountKobo || 0 };
+    return { member, payment, count: all.filter(item => item.status === 'Paid').length };
+  }).filter(({ member, payment }) => `${member.fullName} ${member.email}`.toLowerCase().includes(search.toLowerCase()) && (!filter || (filter === 'not-paid' ? payment.status !== 'Paid' : payment.status === filter)));
+
+  async function saveFund(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (!editingFund) return;
+    setBusy(true); setError(''); setMessage('');
+    try {
+      const result = await paymentResponse<{ fund?: WelfareFund }>(await fetch(editingFund.id ? `/api/admin/welfare-payments/funds/${editingFund.id}` : '/api/admin/welfare-payments', { method: editingFund.id ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: editingFund.title.trim(), description: editingFund.description.trim(), amountKobo: Math.round(Number(editingFund.amount) * 100), isActive: editingFund.isActive }) }));
+      setMessage(editingFund.id ? 'Welfare fund updated. New payments use its updated amount.' : 'Welfare fund created. Members can now view it and make a contribution.');
+      if (result.fund?._id) setFundId(result.fund._id);
+      setEditingFund(null); await load();
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to save welfare fund.'); }
+    finally { setBusy(false); }
+  }
+  return <section className="space-y-6 text-white">
+    <div className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-2xl font-bold">Welfare payments</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/50">Create welfare contribution funds, edit their prices, and maintain the member payment list. Verified Paystack payments update automatically.</p></div><div className="flex flex-wrap gap-2"><button type="button" disabled={loading || busy} onClick={() => { setLoading(true); void load(); }} className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 text-xs text-white/60 disabled:opacity-50"><RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />Refresh</button>{data?.canReview && <button type="button" disabled={busy} onClick={() => { setSelected(null); setEditingFund({ title: '', description: '', amount: '', isActive: true }); setError(''); }} className="inline-flex items-center gap-2 rounded-xl bg-[#2d7045] px-4 py-2.5 text-xs font-semibold"><Plus className="h-4 w-4" />Create welfare fund</button>}</div></div>
+    {error && <p role="alert" className="rounded-xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-200">{error}</p>}
+    {message && <p role="status" className="flex items-start gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm leading-6 text-emerald-200"><CheckCircle2 className="mt-1 h-4 w-4 shrink-0" />{message}</p>}
+    {editingFund && <form onSubmit={saveFund} className="space-y-5 rounded-2xl border border-white/10 bg-[#131820] p-6"><h2 className="text-xl font-bold">{editingFund.id ? 'Edit welfare fund' : 'Create welfare fund'}</h2><fieldset disabled={busy} className="space-y-5"><label className="block text-sm text-white/65">Fund title<input required minLength={3} maxLength={200} value={editingFund.title} onChange={event => setEditingFund({ ...editingFund, title: event.target.value })} className={`${adminPaymentInput} mt-2`} /></label><label className="block text-sm text-white/65">Purpose and contribution details<textarea required minLength={3} maxLength={5000} rows={4} value={editingFund.description} onChange={event => setEditingFund({ ...editingFund, description: event.target.value })} className={`${adminPaymentInput} mt-2`} /></label><label className="block text-sm text-white/65">Contribution amount (₦)<input required type="number" min="1" max="1000000" step="0.01" value={editingFund.amount} onChange={event => setEditingFund({ ...editingFund, amount: event.target.value })} className={`${adminPaymentInput} mt-2`} /></label><label className="flex items-center gap-3 text-sm text-white/65"><input type="checkbox" checked={editingFund.isActive} onChange={event => setEditingFund({ ...editingFund, isActive: event.target.checked })} className="accent-emerald-600" />Open this fund for new member payments</label></fieldset><p className="text-xs leading-6 text-white/40">Existing invoices and confirmed payments keep their original price when you change a fund’s amount. Closing a fund keeps its payment history visible.</p><div className="flex flex-wrap gap-3"><button disabled={busy} className="inline-flex items-center gap-2 rounded-xl bg-[#2d7045] px-5 py-3 text-sm font-semibold disabled:opacity-50">{busy && <Loader2 className="h-4 w-4 animate-spin" />}{busy ? 'Saving…' : 'Save welfare fund'}</button><button type="button" disabled={busy} onClick={() => setEditingFund(null)} className="rounded-xl border border-white/15 px-5 py-3 text-sm text-white/60">Cancel</button></div></form>}
+    {loading ? <p role="status" className="flex min-h-48 items-center justify-center gap-3 text-sm text-white/50"><Loader2 className="h-5 w-5 animate-spin" />Loading welfare records…</p> : !fund ? <div className="rounded-2xl border border-white/10 p-8"><HeartHandshake className="mb-4 h-8 w-8 text-emerald-300/50" /><h2 className="text-lg font-semibold">No welfare payment funds yet</h2><p className="mt-2 text-sm leading-6 text-white/50">Create a fund with its purpose and contribution price to start collecting welfare payments.</p></div> : <>
+      <label className="block max-w-xl text-sm text-white/65">Welfare fund<select value={fundId} onChange={event => { setFundId(event.target.value); setSelected(null); setEditingFund(null); setFilter(''); setSearch(''); }} className={`${adminPaymentInput} mt-2`}>{data?.funds.map(item => <option key={item._id} value={item._id}>{item.title}{item.isActive ? '' : ' (closed)'}</option>)}</select></label>
+      <div className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6"><div><h2 className="text-xl font-bold">{fund.title}</h2><p className="mt-2 max-w-2xl whitespace-pre-wrap text-sm leading-6 text-white/50">{fund.description}</p><p className="mt-4 text-3xl font-bold">{formatNaira(fund.amountKobo, true)}</p><p className="mt-2 text-xs text-white/40">{fund.isActive ? 'Open for payments' : 'Closed to new payments'}</p></div>{data?.canReview && <button type="button" onClick={() => setEditingFund({ id: fund._id, title: fund.title, description: fund.description, amount: String(fund.amountKobo / 100), isActive: fund.isActive })} className="rounded-xl border border-emerald-400/20 px-4 py-2.5 text-xs font-semibold text-emerald-300">Edit fund and price</button>}</div>
+      <div className="grid gap-3 sm:grid-cols-[1fr_240px]"><label className="relative"><span className="sr-only">Search welfare members</span><Search className="absolute left-3.5 top-3.5 h-4 w-4 text-white/30" /><input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search member name or email" className={`${adminPaymentInput} pl-10`} /></label><select aria-label="Filter welfare payments" value={filter} onChange={event => setFilter(event.target.value)} className={adminPaymentInput}><option value="">All members</option><option value="Paid">Paid</option><option value="not-paid">Not paid</option><option value="Pending">Awaiting confirmation</option><option value="Rejected">Rejected</option></select></div>
+      {selected && <AdminPaymentEditor key={`${fundId}-${selected.member.id}`} payment={selected.payment} title={`${selected.member.fullName} · ${fund.title}`} endpoint={selected.payment._id ? `/api/admin/welfare-payments/${selected.payment._id}` : undefined} recordEndpoint="/api/admin/welfare-payments/record" recordData={{ memberId: selected.member.id, fundId }} canEdit={Boolean(data?.canReview)} onClose={() => setSelected(null)} onSaved={nextMessage => { setSelected(null); setMessage(nextMessage); void load(); }} />}
+      {!members.length ? <p className="rounded-2xl border border-white/10 p-6 text-sm text-white/50">No members match these filters.</p> : <div className="overflow-x-auto rounded-2xl border border-white/10"><table className="w-full min-w-[620px] bg-transparent text-left text-sm [&_td]:border-white/10 [&_td]:text-white/70 [&_th]:border-white/10 [&_th]:normal-case [&_th]:tracking-normal"><caption className="sr-only">Member welfare payment records for {fund.title}</caption><thead className="bg-white/5 text-xs text-white/50"><tr>{['Member', 'Status', 'Amount', 'Overall welfare payments', 'Action'].map(label => <th key={label} scope="col" className="p-4 font-semibold">{label}</th>)}</tr></thead><tbody>{members.map(({ member, payment, count }) => <tr key={member.id} className="border-t border-white/10"><th scope="row" className="p-4"><p className="font-semibold text-white/85">{member.fullName}</p><p className="mt-1 text-xs font-normal text-white/40">{member.email}</p></th><td className="p-4"><PaymentStatus status={payment.status} dark /></td><td className="p-4">{formatNaira(payment.amountKobo, true)}</td><td className="p-4 font-semibold">{count}</td><td className="p-4"><button type="button" disabled={!payment._id && !fund.isActive} onClick={() => { setSelected({ member, payment }); setEditingFund(null); setMessage(''); }} className="text-xs font-semibold text-emerald-300 underline disabled:cursor-not-allowed disabled:text-white/25">{data?.canReview ? payment.status === 'Pending' && payment.paymentMethod === 'bank' ? 'Review transfer' : payment._id ? 'Edit payment' : 'Record direct transfer' : 'View record'}</button></td></tr>)}</tbody></table></div>}
+    </>}
+  </section>;
+}

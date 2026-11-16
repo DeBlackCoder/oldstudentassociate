@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongodb';
 import Applicant from '@/lib/models/Applicant';
+import { visibleAccountFilter } from '@/lib/utils/account-visibility';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,11 +13,11 @@ export async function GET(request: NextRequest) {
 
     await connectDB();
 
-    const applicant = await Applicant.findOne({ applicationRef: ref }).select(
+    const applicant = await Applicant.findOne({ ...visibleAccountFilter, applicationRef: ref }).select(
       'applicationRef fullName email status submittedAt membershipNumber paymentStatus'
     );
 
-    if (!applicant) {
+    if (!applicant || applicant.status === 'Saved' || applicant.paymentStatus !== 'paid') {
       return NextResponse.json(
         { error: 'No record found for the provided application reference' },
         { status: 404 }
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
       fullName: string;
       email: string;
       paymentStatus: string;
-      submittedAt: Date;
+      submittedAt?: Date;
       membershipNumber?: string;
     } = {
       success: true,

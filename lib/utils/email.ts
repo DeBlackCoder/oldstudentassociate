@@ -4,6 +4,9 @@ const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.SMTP_PORT || '587'),
   secure: process.env.SMTP_SECURE === 'true',
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -13,6 +16,29 @@ const transporter = nodemailer.createTransport({
 const FROM = process.env.SMTP_FROM || 'RSSSOSAA <noreply@rsssosaa.org>';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 const LOGO_URL = `${APP_URL}/logo.png`;
+
+export async function sendPasswordResetEmail(email: string, resetUrl: string): Promise<void> {
+  const safeUrl = resetUrl.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  await transporter.sendMail({
+    from: FROM,
+    to: email,
+    subject: 'Reset your RSSSOSAA password',
+    text: `Reset your password using this link:\n${resetUrl}\n\nThe link expires in 30 minutes and can be used once. If you did not request it, ignore this email. Your password will remain unchanged.`,
+    html: `<!DOCTYPE html><html><body style="margin:0;background:#f4f4f0;font-family:Arial,sans-serif">
+      <table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px"><tr><td align="center">
+        <table width="100%" style="max-width:480px;background:#fff;border-radius:16px;overflow:hidden">
+          ${emailHeader('Account recovery')}
+          <tr><td style="padding:32px"><h1 style="font-size:23px;color:#121417">Reset your password</h1>
+            <p style="font-size:14px;color:#555;line-height:1.7">Use the button below to choose a new password for your RSSSOSAA account.</p>
+            <a href="${safeUrl}" style="display:inline-block;background:#1a472a;color:#fff;text-decoration:none;padding:14px 24px;border-radius:10px;font-weight:bold">Choose a new password</a>
+            <p style="font-size:13px;color:#777;line-height:1.7">This link expires in 30 minutes and can be used once. If you did not request it, ignore this email. Your password will remain unchanged.</p>
+            <p style="font-size:12px;color:#777">If the button does not work, copy this link into your browser:</p>
+            <p style="font-size:12px;word-break:break-all"><a href="${safeUrl}" style="color:#1a472a">${safeUrl}</a></p>
+          </td></tr>
+        </table>
+      </td></tr></table></body></html>`,
+  });
+}
 
 // Shared email header with logo
 function emailHeader(subtitle = 'Old Students Association') {
@@ -232,7 +258,7 @@ export async function sendRejectionEmail(
   });
 }
 
-const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || 'oldstudentassociation7@gmail.com';
+const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || 'oldstudentassociation30@gmail.com';
 
 // ── Admin notification: new registration ────────────────────────────
 export async function notifyAdminNewRegistration(applicant: {
@@ -260,13 +286,9 @@ export async function notifyAdminNewRegistration(applicant: {
   const row = (label: string, value: string) =>
     `<tr><td style="padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:13px;color:#666;width:160px;vertical-align:top">${label}</td><td style="padding:8px 0 8px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;color:#121417;font-weight:500;vertical-align:top">${value || '—'}</td></tr>`;
 
-  const rawFrom = process.env.SMTP_FROM || '';
-  const siteEmail = rawFrom.match(/<(.+)>/)?.[1]?.trim() || rawFrom.trim() || process.env.SMTP_USER || '';
-  const toAddresses = [ADMIN_NOTIFY_EMAIL, siteEmail].filter((e, i, arr) => e && arr.indexOf(e) === i).join(', ');
-
   await transporter.sendMail({
     from: FROM,
-    to: toAddresses,
+    to: ADMIN_NOTIFY_EMAIL,
     subject: `[New Registration] ${applicant.fullName} — ${applicant.applicationRef}`,
     html: `
 <!DOCTYPE html>
@@ -420,13 +442,9 @@ export async function notifyAdminPaymentReceived(applicant: {
     ? `₦${(applicant.paymentAmount / 100).toLocaleString()}`
     : '₦2,000';
 
-  const rawFrom = process.env.SMTP_FROM || '';
-  const siteEmail = rawFrom.match(/<(.+)>/)?.[1]?.trim() || rawFrom.trim() || process.env.SMTP_USER || '';
-  const toAddresses = [ADMIN_NOTIFY_EMAIL, siteEmail].filter((e, i, arr) => e && arr.indexOf(e) === i).join(', ');
-
   await transporter.sendMail({
     from: FROM,
-    to: toAddresses,
+    to: ADMIN_NOTIFY_EMAIL,
     subject: `[Payment Received] ${applicant.fullName} — ${applicant.applicationRef}`,
     html: `
 <!DOCTYPE html>

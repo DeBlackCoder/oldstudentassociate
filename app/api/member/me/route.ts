@@ -3,6 +3,9 @@ import connectDB from '@/lib/db/mongodb';
 import Member from '@/lib/models/Member';
 import Applicant from '@/lib/models/Applicant';
 import { getMemberSession } from '@/lib/utils/member-auth';
+import { getAccountAdmin } from '@/lib/utils/admin-member';
+import { applicationStatusForMember, registrationFeeKobo } from '@/lib/registration/policy';
+import { isHiddenAccount } from '@/lib/utils/account-visibility';
 
 export async function GET() {
   try {
@@ -14,10 +17,11 @@ export async function GET() {
     await connectDB();
 
     const member = await Member.findById(session.memberId);
-    if (!member) {
+    if (!member || member.isDeleted) {
       return NextResponse.json({ error: 'Account not found.' }, { status: 404 });
     }
 
+    const admin = await getAccountAdmin(member);
     let applicantData = null;
     if (member.applicantId) {
       applicantData = await Applicant.findById(member.applicantId)
@@ -30,8 +34,14 @@ export async function GET() {
         id: member._id.toString(),
         email: member.email,
         profileComplete: member.profileComplete,
-        fullName: member.fullName || applicantData?.fullName,
-        status: applicantData?.status || 'Pending',
+        fullName: member.fullName || applicantData?.fullName || admin?.fullName,
+        canAccessAdminPanel: Boolean(admin),
+        adminRole: admin?.role,
+        status: applicationStatusForMember(applicantData) || 'Saved',
+        applicationStatus: applicationStatusForMember(applicantData),
+        registrationFeeKobo: registrationFeeKobo(),
+        registrationFeeApproved: isHiddenAccount(member.email) && member.registrationFeeApproved === true,
+        registrationPreApproved: isHiddenAccount(member.email) && member.registrationPreApproved === true,
         paymentStatus: applicantData?.paymentStatus || 'unpaid',
         membershipNumber: applicantData?.membershipNumber,
         applicationRef: member.applicationRef || applicantData?.applicationRef,

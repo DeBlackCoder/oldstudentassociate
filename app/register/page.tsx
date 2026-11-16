@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import ProgressIndicator from '@/components/forms/ProgressIndicator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -18,7 +19,7 @@ const STEPS = [
   { number: 3, title: 'Professional', subtitle: 'Current status' },
   { number: 4, title: 'Participation', subtitle: 'Your contribution' },
   { number: 5, title: 'Declaration', subtitle: 'Agreement' },
-  { number: 6, title: 'Review', subtitle: 'Confirm & submit' },
+  { number: 6, title: 'Review', subtitle: 'Check & save' },
 ];
 
 const STORAGE_KEY = 'rsssosaa_reg_draft';
@@ -84,13 +85,14 @@ const EMPTY_FORM: RegistrationData = {
   signatureDate: new Date().toISOString().split('T')[0],
 };
 
-function loadDraft(): { step: number; data: RegistrationData } {
+function loadDraft(storageKey: string, accountEmail: string): { step: number; data: RegistrationData } {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey) || localStorage.getItem(STORAGE_KEY);
     if (!raw) return { step: 1, data: EMPTY_FORM };
     const parsed = JSON.parse(raw);
+    if (parsed.data?.email?.toLowerCase() !== accountEmail.toLowerCase()) return { step: 1, data: EMPTY_FORM };
     return {
-      step: parsed.step ?? 1,
+      step: Number.isInteger(parsed.step) && parsed.step >= 1 && parsed.step <= STEPS.length ? parsed.step : 1,
       data: { ...EMPTY_FORM, ...parsed.data },
     };
   } catch {
@@ -98,21 +100,21 @@ function loadDraft(): { step: number; data: RegistrationData } {
   }
 }
 
-function saveDraft(step: number, data: RegistrationData) {
+function saveDraft(storageKey: string, step: number, data: RegistrationData) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ step, data }));
+    localStorage.setItem(storageKey, JSON.stringify({ step, data }));
   } catch {
     // storage unavailable — silent
   }
 }
 
-export function clearRegistrationDraft() {
+export function clearRegistrationDraft(storageKey = STORAGE_KEY) {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(storageKey);
   } catch {}
 }
 
-export default function RegisterPage() {
+export function RegistrationForm({ embedded = false, onSaved }: { embedded?: boolean; onSaved?: () => void }) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<RegistrationData>(EMPTY_FORM);
@@ -121,55 +123,64 @@ export default function RegisterPage() {
   const [hydrated, setHydrated] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [applicationRef, setApplicationRef] = useState<string | null>(null);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState('unpaid');
+  const [accountEmail, setAccountEmail] = useState('');
+  const [draftStorageKey, setDraftStorageKey] = useState(STORAGE_KEY);
+  const [loadError, setLoadError] = useState('');
 
-  // Restore draft from localStorage on first render (client-only), then sync with DB
+  // Load the account before restoring its private local draft and saved form.
   useEffect(() => {
-    const { step, data } = loadDraft();
-    setCurrentStep(step);
-    setFormData(data);
-    setHydrated(true);
+    let cancelled = false;
 
     // Async DB sync — nested IIFE so the effect itself stays synchronous
     (async () => {
       try {
-        const res = await fetch('/api/member/draft');
+        const res = await fetch('/api/member/draft', { cache: 'no-store' });
+        if (cancelled) return;
         if (res.status === 401) {
           setIsLoggedIn(false);
           return;
         }
         if (res.ok) {
-          setIsLoggedIn(true);
           const dbData = await res.json();
-          if (dbData.profileComplete === true) {
-            router.push('/members/dashboard');
-            return;
-          }
-          if (dbData.applicationRef) {
-            setApplicationRef(dbData.applicationRef);
-          }
-          if (dbData.draft !== null && dbData.draft !== undefined) {
-            setFormData(prev => ({ ...prev, ...(dbData.draft as Partial<RegistrationData>) }));
-            if ((dbData.draft as { step?: number }).step) {
-              setCurrentStep((dbData.draft as { step?: number }).step as number);
-            }
-          }
+          if (cancelled) return;
+          const email = dbData.email || dbData.draft?.email || '';
+          const storageKey = `${STORAGE_KEY}:${email.toLowerCase()}`;
+          const local = loadDraft(storageKey, email);
+          const saved = dbData.profileComplete === true;
+          const draft = dbData.draft as (Partial<RegistrationData> & { step?: number }) | null;
+          setIsLoggedIn(true);
+          setAccountEmail(email);
+          setDraftStorageKey(storageKey);
+          setProfileSaved(saved);
+          setPaymentStatus(dbData.paymentStatus || 'unpaid');
+          setApplicationRef(dbData.applicationRef || null);
+          setFormData({ ...EMPTY_FORM, ...(saved ? {} : local.data), ...draft, email });
+          const requestedStep = Number(new URLSearchParams(window.location.search).get('step'));
+          const restoredStep = requestedStep >= 1 && requestedStep <= STEPS.length ? requestedStep : saved ? 6 : draft?.step || local.step;
+          setCurrentStep(restoredStep >= 1 && restoredStep <= STEPS.length ? restoredStep : 1);
+        } else {
+          throw new Error('Your saved form could not be loaded.');
         }
       } catch {
-        // Network error — fall back to localStorage-only mode
+        if (!cancelled) setLoadError('Your saved form could not be loaded. Please refresh to try again.');
+      } finally {
+        if (!cancelled) setHydrated(true);
       }
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => { cancelled = true; };
   }, []);
 
   // Persist to localStorage on every change
   useEffect(() => {
-    if (!hydrated) return;
-    saveDraft(currentStep, formData);
-  }, [currentStep, formData, hydrated]);
+    if (!hydrated || !isLoggedIn) return;
+    saveDraft(draftStorageKey, currentStep, formData);
+  }, [currentStep, formData, hydrated, isLoggedIn, draftStorageKey]);
 
   // Fire-and-forget draft save to server
   const saveDraftToServer = (step: number, data: RegistrationData) => {
-    if (!isLoggedIn) return;
+    if (!isLoggedIn || profileSaved) return;
     fetch('/api/member/draft', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -178,7 +189,7 @@ export default function RegisterPage() {
   };
 
   const updateFormData = (data: Partial<RegistrationData>) => {
-    setFormData(prev => ({ ...prev, ...data }));
+    setFormData(prev => ({ ...prev, ...data, email: accountEmail || data.email || prev.email }));
   };
 
   const nextStep = () => {
@@ -217,20 +228,24 @@ export default function RegisterPage() {
 
   const progressPercent = Math.round((currentStep / STEPS.length) * 100);
 
-  // Avoid hydration mismatch — render nothing until localStorage is read
-  if (!hydrated) return null;
+  // Keep incomplete account data out of the form until hydration finishes.
+  if (!hydrated) return <div className="py-16 text-center text-neutral-900" role="status">Loading your registration form...</div>;
+  if (loadError) return <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-red-900">{loadError}</div>;
+  if (!isLoggedIn) return <div className="mx-auto max-w-xl rounded-2xl bg-white p-8 text-center text-neutral-900 mt-28 mb-12"><h1 className="text-xl font-bold">Sign in to save your membership form</h1><p className="my-4">Your form and payment stay securely linked to your account.</p><Link href="/login" className="inline-flex rounded-full bg-[#1a472a] px-6 py-3 font-semibold text-white">Sign in</Link></div>;
 
   return (
-    <div className="min-h-screen bg-[#ECEBE6] py-12 pt-28 sm:pt-32">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className={embedded ? '' : 'min-h-screen bg-[#ECEBE6] py-12 pt-28 sm:pt-32'}>
+      <div className={embedded ? '' : 'max-w-4xl mx-auto px-4 sm:px-6 lg:px-8'}>
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Membership Registration
+            {profileSaved ? 'Edit Your Registration Form' : 'Membership Registration'}
           </h1>
           <p className="text-lg text-gray-600">
-            Join the Rivers State Secondary Schools Old Students Association
+            {profileSaved ? 'Review your saved details and save any changes.' : 'Save your form first. It is submitted automatically when your registration payment is confirmed.'}
           </p>
+          <p className="mt-3 text-sm text-neutral-700">Account email: <strong>{accountEmail}</strong>. Your registration uses this email.</p>
+          {!embedded && <Link href="/members/dashboard?tab=edit-form" className="mt-3 inline-block text-sm font-semibold text-[#1a472a] underline">Return to dashboard</Link>}
         </div>
 
         {/* Progress bar */}
@@ -243,13 +258,14 @@ export default function RegisterPage() {
 
         {/* Form Container */}
         <Card className="bg-[#F6F5F0]">
-          <CardContent className="p-8 md:p-12">
+          <CardContent className="p-5 sm:p-8 md:p-12">
             {currentStep === 1 && (
               <PersonalInfoStep
                 data={formData}
                 updateData={updateFormData}
                 onNext={nextStep}
                 returnToReview={returnToReview}
+                emailReadOnly
               />
             )}
             {currentStep === 2 && (
@@ -294,6 +310,10 @@ export default function RegisterPage() {
                 onBack={previousStep}
                 onEdit={handleEditFromReview}
                 applicationRef={applicationRef}
+                profileSaved={profileSaved}
+                paymentStatus={paymentStatus}
+                draftStorageKey={draftStorageKey}
+                onSaved={embedded ? () => { onSaved?.(); router.push(`/members/dashboard?tab=${paymentStatus === 'paid' ? 'application' : 'registration-payment'}`); } : undefined}
               />
             )}
           </CardContent>
@@ -303,12 +323,16 @@ export default function RegisterPage() {
         <div className="mt-8 text-center text-sm text-gray-600">
           <p>
             Need assistance? Contact us at{' '}
-            <a href="mailto:oldstudentassociation7@gmail.com" className="text-[#1a472a] underline">
-              oldstudentassociation7@gmail.com
+            <a href="mailto:oldstudentassociation30@gmail.com" className="text-[#1a472a] underline">
+              oldstudentassociation30@gmail.com
             </a>
           </p>
         </div>
       </div>
     </div>
   );
+}
+
+export default function RegisterPage() {
+  return <RegistrationForm />;
 }

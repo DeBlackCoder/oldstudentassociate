@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Eye, EyeOff, Loader2, Plus, Shield, ShieldOff, Trash2, UserCog, X } from 'lucide-react';
 
@@ -93,7 +94,8 @@ export default function AdminManagementPage() {
     try {
       const res = await fetch('/api/admin/admins');
       const data = await res.json();
-      if (data.success) { setAdmins(data.admins); setIsSuperAdmin(data.isSuperAdmin); }
+      if (res.ok && data.success) { setAdmins(data.admins); setIsSuperAdmin(data.isSuperAdmin); }
+      else setError(data.error || 'Failed to load admins');
     } catch { setError('Failed to load admins'); }
     finally { setLoading(false); }
   }
@@ -170,7 +172,7 @@ export default function AdminManagementPage() {
     if (type === 'role') return { title: 'Change Role', description: `Change ${admin.fullName}'s role to "${newRole}"?`, confirmLabel: 'Change Role', confirmClass: 'bg-blue-600 hover:bg-blue-700 text-white' };
     if (type === 'deactivate') return { title: 'Deactivate Admin', description: `Deactivate ${admin.fullName}? They will lose access immediately.`, confirmLabel: 'Deactivate', confirmClass: 'bg-amber-600 hover:bg-amber-700 text-white' };
     if (type === 'activate') return { title: 'Activate Admin', description: `Re-activate ${admin.fullName}'s account?`, confirmLabel: 'Activate', confirmClass: 'bg-[#1a472a] hover:bg-[#2d5f3f] text-white' };
-    if (type === 'delete') return { title: 'Remove Admin', description: `Permanently remove ${admin.fullName}'s admin access? This cannot be undone.`, confirmLabel: 'Remove', confirmClass: 'bg-red-600 hover:bg-red-700 text-white' };
+    if (type === 'delete') return { title: 'Revoke Admin Access', description: `Remove ${admin.fullName}'s administrator access? Their regular member account, profile, and payments will remain available.`, confirmLabel: 'Revoke Access', confirmClass: 'bg-red-600 hover:bg-red-700 text-white' };
     return null;
   };
 
@@ -187,10 +189,13 @@ export default function AdminManagementPage() {
           </p>
         </div>
         {isSuperAdmin && (
+          <div className="flex flex-wrap gap-2">
+          <Link href="/admin/dashboard/users" className="flex items-center gap-2 h-9 px-4 rounded-xl border border-white/20 text-white text-sm font-semibold">Promote member</Link>
           <button onClick={() => setShowCreate(true)}
             className="flex items-center gap-2 h-9 px-4 rounded-xl bg-[#1a472a] text-white text-sm font-semibold hover:bg-[#2d5f3f] transition-all">
             <Plus className="h-4 w-4" /> Add Admin
           </button>
+          </div>
         )}
       </div>
 
@@ -207,7 +212,7 @@ export default function AdminManagementPage() {
           <div className="py-16 text-center text-white/30 text-sm">No admin accounts found</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="dashboard-light-surface w-full bg-white">
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   {['Admin', 'Role', 'Status', 'Last Login', isSuperAdmin ? 'Actions' : ''].filter(Boolean).map(h => (
@@ -311,6 +316,7 @@ export default function AdminManagementPage() {
               </div>
 
               <form onSubmit={handleCreate} className="px-6 py-6 space-y-4">
+                <p className="text-sm text-white/60">To promote an existing member while keeping their password, use <Link href="/admin/dashboard/users" className="underline text-white">User accounts</Link>.</p>
                 <div>
                   <label className="block text-xs text-white/50 font-medium mb-1.5 uppercase tracking-wide">Full Name</label>
                   <input value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} required

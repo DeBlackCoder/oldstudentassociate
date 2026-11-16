@@ -107,7 +107,7 @@ export default function Chatbot() {
   return (
     <>
       {/* Floating button */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end gap-3">
         <AnimatePresence>
           {!open && (
             <motion.div
@@ -115,7 +115,7 @@ export default function Chatbot() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.9 }}
               transition={{ duration: 0.2 }}
-              className="bg-white rounded-2xl shadow-lg px-4 py-2.5 text-sm font-medium text-[#1a472a] border border-[#1a472a]/15 max-w-[200px] text-right leading-snug cursor-pointer flex items-center gap-2"
+              className="bg-white rounded-2xl shadow-lg px-4 py-2.5 text-sm font-medium text-[#1a472a] border border-[#1a472a]/15 max-w-[200px] text-right leading-snug cursor-pointer hidden sm:flex items-center gap-2"
               onClick={() => setOpen(true)}
             >
               <Sparkles className="h-4 w-4 flex-shrink-0" />

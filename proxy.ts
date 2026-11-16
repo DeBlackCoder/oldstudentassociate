@@ -16,7 +16,10 @@ export async function proxy(request: NextRequest) {
       const secret = new TextEncoder().encode(
         process.env.JWT_SECRET || 'your-secret-key-change-in-production'
       );
-      await jwtVerify(token, secret);
+      const { payload } = await jwtVerify(token, secret);
+      if (typeof payload.adminId !== 'string' || !/^[a-f\d]{24}$/i.test(payload.adminId) || !['Super Admin', 'Admin', 'Verifier'].includes(String(payload.role))) {
+        return NextResponse.redirect(new URL('/admin/login', request.url));
+      }
       return NextResponse.next();
     } catch {
       return NextResponse.redirect(new URL('/admin/login', request.url));

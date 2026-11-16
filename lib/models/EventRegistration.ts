@@ -9,6 +9,7 @@ export interface IEventRegistration {
   membershipNumber: string;
   paymentStatus: 'unpaid' | 'paid' | 'free';
   paymentRef?: string;
+  paymentAmount?: number;
   paidAt?: Date;
   registeredAt: Date;
   eventCardRef?: string;
@@ -28,6 +29,7 @@ const EventRegistrationSchema = new Schema<IEventRegistration>({
     index: true,
   },
   paymentRef: { type: String, sparse: true },
+  paymentAmount: { type: Number },
   paidAt: { type: Date },
   registeredAt: { type: Date, default: Date.now, index: true },
   eventCardRef: { type: String, unique: true, sparse: true },

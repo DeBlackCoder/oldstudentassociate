@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongodb';
 import Admin from '@/lib/models/Admin';
 import { verifyPassword, setAdminSession } from '@/lib/utils/auth';
+import { setMemberSession } from '@/lib/utils/member-auth';
+import { ensureAdminMember } from '@/lib/utils/admin-member';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +21,7 @@ export async function POST(request: NextRequest) {
     // Find admin
     const admin = await Admin.findOne({ email: email.toLowerCase() });
 
-    if (!admin) {
+    if (!admin || admin.isDeleted) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
@@ -47,11 +49,13 @@ export async function POST(request: NextRequest) {
     admin.lastLogin = new Date();
     await admin.save();
 
-    // Set session
+    const memberAccount = await ensureAdminMember(admin);
     await setAdminSession(admin._id.toString(), admin.email, admin.role);
+    await setMemberSession(memberAccount._id.toString(), memberAccount.email);
 
     return NextResponse.json({
       success: true,
+      redirectTo: '/members/dashboard',
       admin: {
         id: admin._id,
         fullName: admin.fullName,

@@ -36,7 +36,11 @@ export default function Footer() {
 
           {/* Right - Links */}
           <div className="flex justify-center">
-            <div className="flex gap-6 text-gray-300 text-sm">
+            <div className="flex flex-wrap justify-center gap-6 text-gray-300 text-sm">
+              <Link href="/live" className="hover:text-white transition-colors">Live & Videos</Link>
+              <Link href="/programmes" className="hover:text-white transition-colors">Programmes</Link>
+              <Link href="/welfare" className="hover:text-white transition-colors">Welfare</Link>
+              <Link href="/scholarships" className="hover:text-white transition-colors">Scholarships</Link>
               <Link href="/contact" className="hover:text-white transition-colors">
                 Contact
               </Link>
