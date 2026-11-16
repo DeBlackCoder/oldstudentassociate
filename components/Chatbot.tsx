@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { MessageCircle, X, Send, Loader2, Bot, ChevronDown, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
+
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -22,6 +24,9 @@ const QUICK_REPLIES = [
   'What is the membership fee?',
   'How do I check my application?',
   'Who can join RSSSOSAA?',
+  'What events are coming up?',
+  'How do I contact the association?',
+  'Tell me about RSSSOSAA',
 ];
 
 function formatContent(text: string) {
