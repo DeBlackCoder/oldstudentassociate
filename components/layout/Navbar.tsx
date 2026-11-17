@@ -281,11 +281,11 @@ export default function Navbar() {
                   boxShadow: "0 4px 24px rgba(0,0,0,0.12)",
                 }}
               >
-                <div className="px-4 pb-4 pt-3 grid grid-cols-1 gap-3">
+                <div className="px-4 pb-4 pt-3 grid grid-cols-2 gap-3">
                   {isDashboard ? (
                     /* Dashboard mode — show tabs */
                     <>
-                      <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-semibold px-1 pb-1">Dashboard</p>
+                      <p className="col-span-2 text-[10px] text-neutral-400 uppercase tracking-widest font-semibold px-1 pb-1">Dashboard</p>
                       {DASHBOARD_TABS.map((tab) => (
                         <button
                           key={tab.id}
@@ -306,13 +306,13 @@ export default function Navbar() {
                         </button>
                       ))}
                       {member?.canAccessAdminPanel && <Link href="/admin/dashboard" onClick={() => setMenuOpen(false)} className="rounded-xl bg-[#1a472a]/10 px-4 py-3 text-center text-sm font-semibold text-[#1a472a]">Admin Panel</Link>}
-                      <div className="border-t border-neutral-200 my-1" />
+                      <div className="col-span-2 border-t border-neutral-200 my-1" />
                       <button
                         onClick={async () => {
                           await fetch('/api/member/logout', { method: 'POST' });
                           window.location.href = '/';
                         }}
-                        className="px-4 py-4 font-body text-sm tracking-wide text-red-500 hover:text-red-600 transition-colors text-center rounded-xl bg-red-50 w-full"
+                        className="col-span-2 px-4 py-4 font-body text-sm tracking-wide text-red-500 hover:text-red-600 transition-colors text-center rounded-xl bg-red-50 w-full"
                       >
                         Sign out
                       </button>
@@ -325,7 +325,7 @@ export default function Navbar() {
                           key={link.label}
                           href={link.href}
                           onClick={() => setMenuOpen(false)}
-                          className={`px-4 py-8 font-body text-sm tracking-widest uppercase transition-all duration-200 text-center ${
+                          className={`px-4 py-5 font-body text-sm tracking-widest uppercase transition-all duration-200 text-center ${
                             pathname === link.href || pathname.startsWith(link.href + "/")
                               ? "text-[#1a472a] font-semibold"
                               : "text-[#121417]/75 hover:text-[#1a472a]"
@@ -348,7 +348,7 @@ export default function Navbar() {
                           <Link
                             href="/members/dashboard"
                             onClick={() => setMenuOpen(false)}
-                            className="px-4 py-8 font-body text-sm tracking-widest uppercase text-[#1a472a] hover:text-[#2d5f3f] transition-colors flex items-center justify-center font-semibold text-center"
+                            className="px-4 py-5 font-body text-sm tracking-widest uppercase text-[#1a472a] hover:text-[#2d5f3f] transition-colors flex items-center justify-center font-semibold text-center"
                             style={{ background: "rgba(26,71,42,0.07)", borderRadius: "10px" }}
                           >
                             My Dashboard
@@ -359,7 +359,7 @@ export default function Navbar() {
                             <Link
                               href="/login"
                               onClick={() => setMenuOpen(false)}
-                              className="px-4 py-8 font-body text-sm tracking-widest uppercase text-[#121417]/75 hover:text-[#1a472a] transition-colors flex items-center justify-center font-semibold text-center"
+                              className="px-4 py-5 font-body text-sm tracking-widest uppercase text-[#121417]/75 hover:text-[#1a472a] transition-colors flex items-center justify-center font-semibold text-center"
                               style={{ background: "rgba(18, 20, 23, 0.03)", borderRadius: "10px" }}
                             >
                               Login
@@ -367,7 +367,7 @@ export default function Navbar() {
                             <Link
                               href="/signup"
                               onClick={() => setMenuOpen(false)}
-                              className="px-4 py-8 font-body text-sm tracking-widest uppercase text-[#1a472a] hover:text-[#2d5f3f] transition-colors flex items-center justify-center font-semibold text-center"
+                              className="px-4 py-5 font-body text-sm tracking-widest uppercase text-[#1a472a] hover:text-[#2d5f3f] transition-colors flex items-center justify-center font-semibold text-center"
                               style={{ borderRadius: "10px" }}
                             >
                               Become a Member
