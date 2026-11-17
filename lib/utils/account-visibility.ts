@@ -22,8 +22,8 @@ export async function hiddenAccountIds() {
     applicationRefs: applicants.map(a => a.applicationRef), names: applicants.map(a => a.fullName).filter(Boolean) };
 }
 
-export function privateActorProjection<T extends Record<string, unknown>>(record: T, hiddenAdminIds: mongoose.Types.ObjectId[]) {
-  const output: Record<string, unknown> = { ...record };
+export function privateActorProjection<T extends object>(record: T, hiddenAdminIds: mongoose.Types.ObjectId[]) {
+  const output: Record<string, unknown> = Object.fromEntries(Object.entries(record));
   const hidden = new Set(hiddenAdminIds.map(String));
   for (const key of ['createdBy', 'updatedBy', 'reviewedBy', 'verifiedBy']) {
     if (output[key] && hidden.has(String(output[key]))) delete output[key];

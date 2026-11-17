@@ -1,16 +1,21 @@
 import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
+import mongoose, { type QueryFilter } from 'mongoose';
 import { getAdminSession } from '@/lib/utils/auth';
 import connectDB from '@/lib/db/mongodb';
-import Notification from '@/lib/models/Notification';
+import Notification, { type INotification } from '@/lib/models/Notification';
 import { HIDDEN_ACCOUNT_EMAIL, hiddenAccountIds, isHiddenAccount } from '@/lib/utils/account-visibility';
 
-async function notificationScope(email: string) {
+async function notificationScope(email: string): Promise<QueryFilter<INotification>> {
   const hidden = await hiddenAccountIds();
   const identifiers = [...hidden.memberIds, ...hidden.applicantIds, ...hidden.adminIds].map(String);
   const tokens = [HIDDEN_ACCOUNT_EMAIL, ...hidden.names, ...hidden.membershipNumbers, ...hidden.applicationRefs];
   const privateText = new RegExp(tokens.filter(Boolean).map(value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'i');
-  const common = { audience: { $ne: 'owner' }, message: { $not: privateText }, actorId: { $nin: identifiers }, targetId: { $nin: identifiers } };
+  const common: QueryFilter<INotification> = {
+    audience: { $ne: 'owner' },
+    message: { $not: privateText },
+    actorId: { $nin: identifiers },
+    targetId: { $nin: identifiers },
+  };
   return isHiddenAccount(email) ? { $or: [{ audience: 'owner' }, common] } : common;
 }
 export async function GET() {
