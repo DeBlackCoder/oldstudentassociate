@@ -76,9 +76,7 @@ export default function LiveVideos() {
         watchUrl: `https://www.youtube.com/live_chat?v=${encodeURIComponent(feed.liveVideoId)}`,
       }
     : null;
-  const liveEmbedUrl = feed?.liveVideoId
-    ? `https://www.youtube.com/embed/${encodeURIComponent(feed.liveVideoId)}`
-    : feed?.liveEmbedUrl;
+  const liveEmbedUrl = feed?.liveEmbedUrl;
 
   return (
     <main className="min-h-screen bg-[#EFEDE6] px-4 pb-20 pt-32 text-[#16201a] sm:px-6 lg:px-8">
