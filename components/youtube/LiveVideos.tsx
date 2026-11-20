@@ -128,13 +128,13 @@ export default function LiveVideos() {
             )}
           </div>
 
-          <div className="relative left-1/2 grid w-[90vw] -translate-x-1/2 items-start gap-5 px-4 sm:px-6 lg:px-8">
+          <div className="relative left-1/2 grid w-screen -translate-x-1/2 items-start gap-5 px-4 sm:w-[90vw] sm:px-6 lg:px-8">
             <div className="overflow-hidden rounded-3xl bg-[#101510] shadow-xl">
               {liveEmbedUrl ? (
                 <iframe
                   title="RSSSOSAA YouTube live stream"
                   src={liveEmbedUrl}
-                  className="aspect-video w-full"
+                  className="aspect-video min-h-[200px] w-full sm:min-h-0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   referrerPolicy="strict-origin-when-cross-origin"
                   allowFullScreen
