@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { CirclePlay, ExternalLink, LoaderCircle, Radio, RefreshCw } from 'lucide-react';
+import { ChevronDown, CirclePlay, ExternalLink, LoaderCircle, Radio, RefreshCw } from 'lucide-react';
 
 type YouTubeVideo = {
   id: string;
@@ -76,6 +76,9 @@ export default function LiveVideos() {
         watchUrl: `https://www.youtube.com/live_chat?v=${encodeURIComponent(feed.liveVideoId)}`,
       }
     : null;
+  const liveEmbedUrl = feed?.liveVideoId
+    ? `https://www.youtube.com/embed/${encodeURIComponent(feed.liveVideoId)}`
+    : feed?.liveEmbedUrl;
 
   return (
     <main className="min-h-screen bg-[#EFEDE6] px-4 pb-20 pt-32 text-[#16201a] sm:px-6 lg:px-8">
@@ -127,23 +130,17 @@ export default function LiveVideos() {
             )}
           </div>
 
-          <div className={`grid gap-5 ${liveChat ? 'lg:grid-cols-[minmax(0,1fr)_360px]' : ''}`}>
+          <div className="relative left-1/2 grid w-[90vw] -translate-x-1/2 items-start gap-5 px-4 sm:px-6 lg:px-8">
             <div className="overflow-hidden rounded-3xl bg-[#101510] shadow-xl">
-              {feed?.liveEmbedUrl && feed.isLive !== false ? (
+              {liveEmbedUrl ? (
                 <iframe
                   title="RSSSOSAA YouTube live stream"
-                  src={feed.liveEmbedUrl}
+                  src={liveEmbedUrl}
                   className="aspect-video w-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   referrerPolicy="strict-origin-when-cross-origin"
                   allowFullScreen
                 />
-              ) : feed?.liveEmbedUrl && feed.isLive === false ? (
-                <div className="flex aspect-video flex-col items-center justify-center px-6 text-center text-white">
-                  <Radio className="mb-4 h-10 w-10 text-[#d9b86a]" />
-                  <p className="text-lg font-semibold">This channel isn&apos;t live currently.</p>
-                  <p className="mt-2 text-sm text-white/70">Please check back when the association starts a live broadcast.</p>
-                </div>
               ) : (
                 <div className="flex aspect-video flex-col items-center justify-center px-6 text-center text-white">
                   {loading ? (
@@ -162,6 +159,17 @@ export default function LiveVideos() {
                 </div>
               )}
             </div>
+            {liveEmbedUrl && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('previous-meetings')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#173f26]/20 bg-white px-4 py-2.5 text-sm font-semibold text-[#173f26] shadow-sm transition hover:bg-[#173f26]/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#173f26]"
+                >
+                  Previous meeting videos <ChevronDown className="h-4 w-4" />
+                </button>
+              </div>
+            )}
 
             <aside className="overflow-hidden rounded-3xl bg-white shadow-sm">
               <div className="border-b border-neutral-200 px-5 py-4">
@@ -201,7 +209,7 @@ export default function LiveVideos() {
           )}
         </section>
 
-        <section>
+        <section id="previous-meetings" className="scroll-mt-28">
           <div className="mb-5 flex items-end justify-between gap-4">
             <div>
               <h2 className="text-2xl font-semibold">Recent videos</h2>
