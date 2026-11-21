@@ -123,7 +123,7 @@ async function searchRecentVideos(channelId: string, apiKey: string): Promise<Yo
     type: 'video',
     endpoint: 'search',
   });
-  const results = await youtubeRequest<SearchItem>(searchParams, apiKey, 30);
+  const results = await youtubeRequest<SearchItem>(searchParams, apiKey, 3600);
   return results.flatMap((item) => {
     const id = item.id?.videoId;
     return id ? [toYouTubeVideo(id, item.snippet)] : [];
@@ -139,7 +139,7 @@ async function getLiveVideoId(channelId: string, apiKey: string): Promise<string
     type: 'video',
     endpoint: 'search',
   });
-  const results = await youtubeRequest<SearchItem>(searchParams, apiKey, 3600);
+  const results = await youtubeRequest<SearchItem>(searchParams, apiKey, 30);
   return results.find((item) => item.id?.videoId)?.id?.videoId ?? null;
 }
 
