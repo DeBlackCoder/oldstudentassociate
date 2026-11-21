@@ -147,11 +147,20 @@ export default function LiveVideos() {
                     <CirclePlay className="mb-4 h-10 w-10 text-[#d9b86a]" />
                   )}
                   <p className="text-lg font-semibold">
-                    {loading ? 'Connecting to YouTube…' : 'YouTube channel not configured yet'}
+                    {loading
+                      ? 'Connecting to YouTube…'
+                      : feed?.error
+                        ? 'YouTube livestream unavailable'
+                        : feed?.isLive === false && feed.configured
+                          ? 'No livestream is currently active'
+                          : 'YouTube channel not configured yet'}
                   </p>
                   {!loading && (
                     <p className="mt-2 max-w-lg text-sm text-white/70">
-                      {feed?.message || 'Add the channel configuration to the deployment environment to enable live video.'}
+                      {feed?.message || feed?.error ||
+                        (feed?.isLive === false
+                          ? 'Please check back during the association’s next live broadcast.'
+                          : 'Add the channel configuration to the deployment environment to enable live video.')}
                     </p>
                   )}
                 </div>

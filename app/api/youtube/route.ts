@@ -123,7 +123,7 @@ async function searchRecentVideos(channelId: string, apiKey: string): Promise<Yo
     type: 'video',
     endpoint: 'search',
   });
-  const results = await youtubeRequest<SearchItem>(searchParams, apiKey, 3600);
+  const results = await youtubeRequest<SearchItem>(searchParams, apiKey, 30);
   return results.flatMap((item) => {
     const id = item.id?.videoId;
     return id ? [toYouTubeVideo(id, item.snippet)] : [];
@@ -249,12 +249,14 @@ export async function GET() {
         channelId: resolvedChannelId,
         channelTitle,
         channelUrl: `https://www.youtube.com/channel/${resolvedChannelId}`,
-        liveEmbedUrl: `https://www.youtube.com/embed/live_stream?channel=${resolvedChannelId}`,
+        liveEmbedUrl: liveVideoId
+          ? `https://www.youtube.com/embed/${encodeURIComponent(liveVideoId)}?playsinline=1`
+          : null,
         isLive: Boolean(liveVideoId),
         liveVideoId,
         videos,
       }, {
-        headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
+        headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
       });
     } catch (error) {
       return NextResponse.json({
@@ -262,9 +264,7 @@ export async function GET() {
         channelId: resolvedChannelId || null,
         channelTitle,
         channelUrl: resolvedChannelId ? `https://www.youtube.com/channel/${resolvedChannelId}` : null,
-        liveEmbedUrl: resolvedChannelId
-          ? `https://www.youtube.com/embed/live_stream?channel=${resolvedChannelId}`
-          : null,
+        liveEmbedUrl: null,
         videos: [],
         error: error instanceof Error ? error.message : 'YouTube data could not be loaded.',
       }, { status: 502 });
@@ -276,8 +276,10 @@ export async function GET() {
     channelId: resolvedChannelId,
     channelTitle,
     channelUrl: `https://www.youtube.com/channel/${resolvedChannelId}`,
-    liveEmbedUrl: `https://www.youtube.com/embed/live_stream?channel=${resolvedChannelId}`,
+    liveEmbedUrl: null,
+    isLive: false,
+    liveVideoId: null,
     videos: [],
     message: 'Add YOUTUBE_API_KEY to load recent videos.',
-  }, { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' } });
+  }, { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } });
 }
