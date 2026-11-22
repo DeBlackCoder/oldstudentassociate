@@ -4,9 +4,12 @@ import mongoose from 'mongoose';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import bcrypt from 'bcryptjs';
+import nodemailer from 'nodemailer';
 import { NextRequest } from 'next/server';
 import Admin from '../lib/models/Admin';
 import Member from '../lib/models/Member';
+import Applicant from '../lib/models/Applicant';
+import AuditLog from '../lib/models/AuditLog';
 import { ensureAdminMember } from '../lib/utils/admin-member';
 import { adminMatchesMember } from '../lib/utils/admin-member-policy';
 import { createMemberToken, getMemberSession, verifyMemberToken } from '../lib/utils/member-auth';
@@ -184,4 +187,94 @@ test('the account endpoint shows Admin Panel only for the matching active admin'
   assert.equal((await GET()).status, 401);
   staff.isActive = true; cookies.set('member-token', memberToken); member.adminId = new mongoose.Types.ObjectId();
   assert.equal((await (await GET()).json()).member.canAccessAdminPanel, false);
+});
+test('a member can retry failed verification email, verify the code, and receive an approved membership', async t => {
+  isolatedConnection();
+  const memberEmail = 'new-member@example.org';
+  const member = new Member({ email: memberEmail, password: 'initial-hash', emailVerified: false });
+  let lookupCount = 0;
+  const findMember = t.mock.method(Member, 'findOne', () => {
+    const result = lookupCount++ === 0 ? null : member;
+    return Object.assign(Promise.resolve(result), { select: () => Promise.resolve(result) }) as unknown as ReturnType<typeof Member.findOne>;
+  });
+  t.mock.method(Member, 'create', (value: unknown) => {
+    Object.assign(member, value);
+    return Promise.resolve(member) as unknown as ReturnType<typeof Member.create>;
+  });
+  t.mock.method(member, 'save', () => Promise.resolve(member));
+
+  let failEmail = true;
+  const sentEmails: unknown[] = [];
+  const transport = {
+    sendMail: async (message: unknown) => {
+      sentEmails.push(message);
+      if (failEmail) throw new Error('Isolated SMTP failure');
+      return { messageId: 'isolated-onboarding-email' };
+    },
+  };
+  t.mock.method(nodemailer, 'createTransport', () => transport as unknown as ReturnType<typeof nodemailer.createTransport>);
+  t.mock.method(console, 'error', () => {});
+
+  const previousNodeEnv = process.env.NODE_ENV;
+  Reflect.set(process.env, 'NODE_ENV', 'production');
+  t.after(() => { if (previousNodeEnv === undefined) Reflect.deleteProperty(process.env, 'NODE_ENV'); else Reflect.set(process.env, 'NODE_ENV', previousNodeEnv); });
+
+  const cookies = mockCookies(t);
+  const request = (url: string, body: unknown) => new NextRequest(url, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const { POST: signup } = await import('../app/api/member/signup/route');
+  const failedSignup = await signup(request('http://localhost/api/member/signup', { email: memberEmail, password: 'member-password' }));
+  assert.equal(failedSignup.status, 503);
+  assert.equal((await failedSignup.json()).error, 'Your account was saved, but we could not send the verification email. Please try again.');
+  assert.equal(member.emailVerified, false);
+
+  Reflect.set(process.env, 'NODE_ENV', 'test');
+  failEmail = false;
+  const resent = await signup(request('http://localhost/api/member/signup', { email: memberEmail, password: 'member-password' }));
+  assert.equal(resent.status, 200);
+  const { devCode } = await resent.json();
+  assert.match(devCode, /^\d{4}$/);
+  assert.equal(sentEmails.length, 2);
+  assert.equal(findMember.mock.callCount(), 2);
+
+  const { POST: verifyEmail } = await import('../app/api/member/verify-email/route');
+  const verified = await verifyEmail(request('http://localhost/api/member/verify-email', { email: memberEmail, code: devCode }));
+  assert.equal(verified.status, 200);
+  assert.equal(member.emailVerified, true);
+  assert.equal(member.emailVerificationCode, undefined);
+  assert.ok(await verifyMemberToken(cookies.get('member-token')!));
+
+  const staff = new Admin({ ...admin, role: 'Super Admin' });
+  const adminToken = await createToken({ adminId: staff._id.toString(), email: staff.email, role: staff.role });
+  cookies.set('admin-token', adminToken);
+  t.mock.method(Admin, 'findById', () => selectedResult(staff) as unknown as ReturnType<typeof Admin.findById>);
+  const applicant = new Applicant({
+    email: memberEmail, fullName: 'New Member', applicationRef: 'RSSS/2026/010',
+    status: 'Pending', paymentStatus: 'paid',
+  });
+  member.profileComplete = true;
+  member.applicantId = applicant._id;
+  member.applicationRef = applicant.applicationRef;
+  t.mock.method(Applicant, 'findById', () => selectedResult(applicant) as unknown as ReturnType<typeof Applicant.findById>);
+  t.mock.method(Applicant, 'countDocuments', () => Promise.resolve(0) as unknown as ReturnType<typeof Applicant.countDocuments>);
+  t.mock.method(applicant, 'save', () => Promise.resolve(applicant));
+  t.mock.method(AuditLog, 'create', () => Promise.resolve({}) as unknown as ReturnType<typeof AuditLog.create>);
+
+  const { POST: approve } = await import('../app/api/admin/applications/[id]/approve/route');
+  const approvalRequest = request(`http://localhost/api/admin/applications/${applicant._id}/approve`, { remarks: 'Verified' });
+  const approval = await approve(approvalRequest, { params: Promise.resolve({ id: applicant._id.toString() }) });
+  const approvalBody = await approval.json();
+  assert.equal(approval.status, 200);
+  assert.equal(applicant.status, 'Approved');
+  assert.match(approvalBody.membershipNumber, /^RSSSOSAA\/\d{4}\/\d{5}$/);
+
+  const memberToken = cookies.get('member-token')!;
+  cookies.delete('admin-token');
+  t.mock.method(Member, 'findById', () => selectedResult(member) as unknown as ReturnType<typeof Member.findById>);
+  const { GET: getAccount } = await import('../app/api/member/me/route');
+  const account = await (await getAccount()).json();
+  assert.equal(account.member.status, 'Approved');
+  assert.equal(account.member.membershipNumber, approvalBody.membershipNumber);
+  assert.ok(await verifyMemberToken(memberToken));
 });

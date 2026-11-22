@@ -194,6 +194,7 @@ test('ambiguous welfare names cannot credit the wrong member, and a membership n
 });
 test('the unique dues-period index prevents invoice duplication and invoice creation preserves prior payments', async t => {
   const { ensureInvoice } = await paymentServer();
+  t.mock.method(PaymentSettings, 'findOne', () => ({ lean: () => Promise.resolve(null) }) as unknown as ReturnType<typeof PaymentSettings.findOne>);
   const invoice = fixtureInvoice('Paid');
   t.mock.method(DuesPayment, 'init', () => Promise.resolve(DuesPayment) as unknown as ReturnType<typeof DuesPayment.init>);
   let captured: unknown[] = [];

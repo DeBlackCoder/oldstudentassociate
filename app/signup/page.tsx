@@ -100,10 +100,13 @@ export default function SignupPage() {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not resend the verification code.');
       if (data.devCode) setDevCode(data.devCode);
       setCode(['', '', '', '']);
       digitRefs[0].current?.focus();
-    } catch { /* silent */ }
+    } catch (err) {
+      setVerifyError(err instanceof Error ? err.message : 'Could not resend the verification code.');
+    }
   }
 
   return (

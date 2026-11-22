@@ -14,13 +14,14 @@ import Notification from '../lib/models/Notification';
 import { applicationStatusForMember, submittedApplicationFilter, submissionFieldsOnPayment } from '../lib/registration/policy';
 import { createMemberToken } from '../lib/utils/member-auth';
 import { createToken } from '../lib/utils/auth';
+import { visibleAccountFilter } from '../lib/utils/account-visibility';
 
 const email = 'member@example.org';
 const now = new Date('2026-10-07T12:00:00Z');
 const completeForm = {
   fullName: 'Avery Member', dateOfBirth: '1990-03-02', gender: 'Female',
   phoneNumber: '08012345678', whatsappNumber: '08012345678', email,
-  residentialAddress: '12 School Road, Port Harcourt', stateOfOrigin: 'Rivers', lga: 'Port Harcourt',
+  residentialAddress: '12 School Road, Port Harcourt', stateOfOrigin: 'Rivers', lga: 'Port Harcourt', referredBy: 'A fellow alumnus',
   secondarySchool: 'Community Secondary School', graduationYear: '2006',
   positionHeldInSchool: 'Library Prefect', currentOccupation: 'Teacher', employmentType: 'Public Service',
   organizationName: 'Community School', skills: ['Teaching'], willingToParticipate: true,
@@ -112,7 +113,7 @@ test('unpaid legacy Pending applications are presented as Saved while reviewed s
 });
 
 test('formal review policy requires both a submitted state and confirmed payment', () => {
-  assert.deepEqual(submittedApplicationFilter, { paymentStatus: 'paid', status: { $in: ['Pending', 'Approved', 'Rejected'] } });
+  assert.deepEqual(submittedApplicationFilter, { ...visibleAccountFilter, paymentStatus: 'paid', status: { $in: ['Pending', 'Approved', 'Rejected'] } });
 });
 
 test('first payment submits saved and legacy pending forms at the actual confirmation time', () => {

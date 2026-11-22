@@ -49,16 +49,25 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Send verification email (non-blocking — don't fail signup if email fails)
+    let verificationEmailSent = true;
     try {
       await sendVerificationEmail(email.toLowerCase(), code);
     } catch (emailErr) {
       console.error('Failed to send verification email:', emailErr);
+      verificationEmailSent = false;
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+          { error: 'Your account was saved, but we could not send the verification email. Please try again.' },
+          { status: 503 },
+        );
+      }
     }
 
     const response: Record<string, unknown> = {
       success: true,
-      message: 'Verification code sent to your email.',
+      message: verificationEmailSent
+        ? 'Verification code sent to your email.'
+        : 'Email could not be sent. Use the development code below.',
     };
 
     // In dev, also return the code so you can test without real email
