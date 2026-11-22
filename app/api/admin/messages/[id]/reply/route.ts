@@ -62,7 +62,7 @@ export async function POST(
 
             <p style="margin:0;font-size:13px;color:#9ca3af">
               If you have further questions, feel free to reply to this email or contact us at
-              <a href="mailto:info@rsssosaa.org" style="color:#1a472a;text-decoration:none">info@rsssosaa.org</a>.
+              <a href="mailto:oldstudentassociation94@gmail.com" style="color:#1a472a;text-decoration:none">oldstudentassociation94@gmail.com</a>.
             </p>
           </div>
           <div style="background:#f9fafb;padding:16px 40px;text-align:center;border-top:1px solid #e5e7eb">

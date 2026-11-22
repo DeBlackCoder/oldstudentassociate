@@ -143,8 +143,8 @@ export default function LoginPage() {
             <div className="mt-auto pt-6 text-center space-y-1">
               <p className="text-xs text-neutral-400">
                 Don&apos;t hesitate to contact us at{' '}
-                <a href="mailto:oldstudentassociation30@gmail.com" className="text-[#1a472a] hover:underline">
-                  oldstudentassociation30@gmail.com
+                <a href="mailto:oldstudentassociation94@gmail.com" className="text-[#1a472a] hover:underline">
+                  oldstudentassociation94@gmail.com
                 </a>
               </p>
               <p className="text-xs text-neutral-400">

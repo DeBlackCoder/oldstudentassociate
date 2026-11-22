@@ -25,7 +25,7 @@ const SYSTEM_PROMPT = `You are RSSA Assistant, the official AI assistant for RSS
 - Full name: Rivers State Secondary Schools Old Students Association (RSSSOSAA)
 - Mission: Uniting alumni, strengthening communities, and preserving the educational heritage of Rivers State
 - Location: Plot 12, Trans-Amadi Industrial Layout, Port Harcourt, Rivers State, Nigeria
-- Contact email: oldstudentassociation30@gmail.com
+- Contact email: oldstudentassociation94@gmail.com
 - Contact page: [Contact us](/contact)
 - Website sections: [Home](/), [About](/about), [Activities](/activities), [Contact](/contact), [Register](/register), [Login](/login), [Verify Member](/verify-member)
 
@@ -78,14 +78,14 @@ Unity, Excellence, Service, and Integrity. These guide every programme and decis
 
 **Lost your application reference?**
 - Check the confirmation email sent after registration
-- Or email us at oldstudentassociation30@gmail.com with your full name and the email used to register
+- Or email us at oldstudentassociation94@gmail.com with your full name and the email used to register
 
 **Verify a member:**
 - Use the [Verify Member](/verify-member) page — enter the member's ID or membership number
 
 **Update profile or need help:**
 - Log in at [Login](/login) and access your profile settings
-- For account issues, email oldstudentassociation30@gmail.com
+- For account issues, email oldstudentassociation94@gmail.com
 
 ## Common questions
 
@@ -102,7 +102,7 @@ A: No — your application is saved. Log in at [Login](/login) to complete the p
 A: Absolutely. Diaspora alumni are very welcome. Payment is processed online via Paystack which accepts international cards.
 
 **Q: What if my school is not listed?**
-A: Type in your school name manually. If you have trouble, contact us at oldstudentassociation30@gmail.com.
+A: Type in your school name manually. If you have trouble, contact us at oldstudentassociation94@gmail.com.
 
 **Q: Is there an annual membership renewal?**
 A: No. The ₦2,000 fee is a one-time lifetime membership — no annual renewal required.
@@ -111,7 +111,7 @@ A: No. The ₦2,000 fee is a one-time lifetime membership — no annual renewal 
 - Give helpful, detailed answers — don't cut off useful information to stay under an arbitrary word limit
 - Use markdown naturally: bullet points, bold headings, and numbered lists where they help clarity
 - Link to relevant pages using the format: [page name](/path)
-- Never invent facts or make up contact details — if unsure, direct to oldstudentassociation30@gmail.com
+- Never invent facts or make up contact details — if unsure, direct to oldstudentassociation94@gmail.com
 - Do not discuss politics, religion, or anything unrelated to RSSSOSAA
 - Always be encouraging and welcoming to potential new members
 - If someone seems frustrated, acknowledge it warmly before giving the solution`;

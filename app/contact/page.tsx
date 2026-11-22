@@ -16,7 +16,7 @@ const contactItems = [
     icon: MapPin,
     href: undefined as string | undefined,
   },
-  { label: 'Email us', value: 'oldstudentassociation30@gmail.com', icon: Mail, href: 'mailto:oldstudentassociation30@gmail.com' },
+  { label: 'Email us', value: 'oldstudentassociation94@gmail.com', icon: Mail, href: 'mailto:oldstudentassociation94@gmail.com' },
   { label: 'Call us', value: '+234 800 000 0000', icon: Phone, href: 'tel:+2348000000000' },
 ];
 

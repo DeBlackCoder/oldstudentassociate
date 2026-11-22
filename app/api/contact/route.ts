@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const FROM = process.env.SMTP_FROM || 'RSSSOSAA <noreply@rsssosaa.org>';
-const TO = process.env.ADMIN_NOTIFY_EMAIL || 'oldstudentassociation30@gmail.com';
+const TO = process.env.ADMIN_NOTIFY_EMAIL || 'oldstudentassociation94@gmail.com';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 export async function POST(request: NextRequest) {

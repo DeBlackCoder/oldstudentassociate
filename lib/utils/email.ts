@@ -241,7 +241,7 @@ export async function sendRejectionEmail(
           </div>` : ''}
           <p style="margin:0 0 24px;font-size:13px;color:#666;line-height:1.6">
             For further information or to appeal this decision, please contact us at 
-            <a href="mailto:info@rsssosaa.org" style="color:#1a472a">info@rsssosaa.org</a>.
+            <a href="mailto:oldstudentassociation94@gmail.com" style="color:#1a472a">oldstudentassociation94@gmail.com</a>.
           </p>
           <p style="margin:16px 0 0;font-size:11px;color:#aaa;text-align:center">This is an automated message. Please do not reply to this email.</p>
         </td></tr>
@@ -254,11 +254,11 @@ export async function sendRejectionEmail(
 </body>
 </html>
     `.trim(),
-    text: `Dear ${fullName},\n\nYour application was not approved at this time.${reason ? '\n\nReason: ' + reason : ''}\n\nContact us: info@rsssosaa.org`,
+    text: `Dear ${fullName},\n\nYour application was not approved at this time.${reason ? '\n\nReason: ' + reason : ''}\n\nContact us: oldstudentassociation94@gmail.com`,
   });
 }
 
-const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || 'oldstudentassociation30@gmail.com';
+const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || 'oldstudentassociation94@gmail.com';
 
 // ── Admin notification: new registration ────────────────────────────
 export async function notifyAdminNewRegistration(applicant: {
