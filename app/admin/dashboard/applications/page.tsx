@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -52,6 +52,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function ApplicationsContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -171,7 +172,18 @@ function ApplicationsContent() {
               </TableHeader>
               <TableBody>
                 {filteredApplications.map((app) => (
-                  <TableRow key={app._id}>
+                  <TableRow
+                    key={app._id}
+                    tabIndex={0}
+                    aria-label={`Review application ${app.applicationRef} for ${app.fullName}`}
+                    className="cursor-pointer hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1a472a]"
+                    onClick={() => router.push(`/admin/dashboard/applications/${app._id}`)}
+                    onKeyDown={(event) => {
+                      if (event.target === event.currentTarget && event.key === 'Enter') {
+                        router.push(`/admin/dashboard/applications/${app._id}`);
+                      }
+                    }}
+                  >
                     <TableCell className="px-6 py-4 font-mono text-sm text-gray-900">
                       {app.applicationRef}
                     </TableCell>
@@ -197,6 +209,7 @@ function ApplicationsContent() {
                       <Link
                         href={`/admin/dashboard/applications/${app._id}`}
                         className="text-sm text-[#1a472a] hover:underline font-medium"
+                        onClick={(event) => event.stopPropagation()}
                       >
                         Review
                       </Link>
