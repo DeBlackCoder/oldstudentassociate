@@ -4,7 +4,7 @@
 
 The association now has a database-backed community portal. Administrators can create, preview, edit, publish and archive programmes, welfare initiatives, scholarships and past meeting minutes. The homepage and Activities page display live published content through section tabs. No sample names, donations or scholarship awards are inserted into the database.
 
-The follow-up work adds password recovery, quarterly dues, member payment/contribution directories and landing-page highlights. See [Payments guide](./PAYMENTS_GUIDE.md) and [Password recovery guide](./PASSWORD_RECOVERY.md) for the account and payment workflows.
+The follow-up work adds quarterly dues, member payment/contribution directories and landing-page highlights. See [Payments guide](./PAYMENTS_GUIDE.md) and [authentication guide](./PASSWORD_RECOVERY.md) for account access.
 
 Membership forms now stay **Saved** until the one-time registration payment is confirmed. That confirmation submits the form automatically for review. Completed forms reopen through **Edit form**, and **Registration payment** has its own dashboard tab alongside **Quarterly payments**. The signed-in homepage shows **View dashboard**. Dashboard white surfaces use black text. See the [registration guide](./REGISTRATION_GUIDE.md) for this workflow.
 
@@ -37,7 +37,7 @@ Admin and Super Admin accounts can make changes. Verifier accounts have read-onl
 | Admin meeting minutes | `/admin/dashboard/minutes` |
 | Member quarterly dues and payment/contribution lists | `/members/dashboard?tab=payments` |
 | Admin payment review | `/admin/dashboard/payments` |
-| Password recovery | `/forgot-password` |
+| Account sign-in | `/login` (Google) |
 
 Public navigation and footer links lead to the public sections. The member dashboard includes the four new tabs on desktop and in its mobile menu. The admin sidebar links to the four editing sections. The admin community portal also includes an Applications tab for scholarship review.
 

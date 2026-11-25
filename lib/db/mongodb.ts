@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import mongoose from 'mongoose';
 
 const MONGODB_URI = process.env.MONGODB_URI!;
@@ -40,19 +39,7 @@ async function keepMongoActive(connection: typeof mongoose) {
   }
 
   try {
-    const collection = database.collection<{
-      _id: string;
-      checkedAt: Date;
-      nonce: string;
-    }>('system_maintenance');
-    await collection.updateOne(
-      { _id: 'cluster-keepalive' },
-      { $set: { checkedAt: new Date(), nonce: randomUUID() } },
-      { upsert: true },
-    );
-
-    const heartbeat = await collection.findOne({ _id: 'cluster-keepalive' });
-    if (!heartbeat) throw new Error('Keepalive record could not be read back.');
+    await database.command({ ping: 1 });
   } catch (error) {
     console.error('MongoDB keepalive failed:', error);
   }

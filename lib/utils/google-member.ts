@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import connectDB from '@/lib/db/mongodb';
 import Member from '@/lib/models/Member';
 
-interface GoogleMemberIdentity {
+export interface GoogleMemberIdentity {
   googleId: string;
   email: string;
   name?: string | null;

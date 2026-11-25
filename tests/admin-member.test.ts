@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
-import bcrypt from 'bcryptjs';
 import { NextRequest } from 'next/server';
 import Admin from '../lib/models/Admin';
 import Member from '../lib/models/Member';
@@ -39,10 +38,6 @@ function isolatedConnection() {
 function selectedResult<T>(value: T) {
   return Object.assign(Promise.resolve(value), { select: () => Promise.resolve(value) });
 }
-function adminLoginRequest() {
-  return new NextRequest('http://localhost/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: admin.email, password: 'test-password' }) });
-}
-
 test('a new admin receives a regular member account without membership approval or payment', async t => {
   const member = new Member({ email: admin.email, password: admin.password, emailVerified: true, adminId: admin._id });
   t.mock.method(Member, 'findOne', () => Promise.resolve(null) as unknown as ReturnType<typeof Member.findOne>);
@@ -115,20 +110,9 @@ test('malformed and unknown-role admin tokens are rejected', async () => {
   assert.equal(await verifyToken(unknown), null);
 });
 
-test('the dedicated admin login route sets both sessions', async t => {
-  isolatedConnection(); const cookies = mockCookies(t);
-  const staff = new Admin({ ...admin, role: 'Super Admin', password: await bcrypt.hash('test-password', 4) });
-  const member = new Member({ email: admin.email, password: 'member-hash', adminId: staff._id, emailVerified: true });
-  t.mock.method(Admin, 'findOne', () => Promise.resolve(staff) as unknown as ReturnType<typeof Admin.findOne>);
-  t.mock.method(staff, 'save', () => Promise.resolve(staff));
-  t.mock.method(Member, 'findOne', () => Promise.resolve(member) as unknown as ReturnType<typeof Member.findOne>);
+test('administrator password login is disabled in favor of shared Google sign-in', async () => {
   const { POST } = await import('../app/api/admin/login/route');
-  const response = await POST(adminLoginRequest());
-  assert.equal(response.status, 200);
-  const body = await response.json(); assert.equal(body.redirectTo, '/admin/dashboard');
-  const adminSession = await verifyToken(cookies.get('admin-token')!);
-  const memberSession = await verifyMemberToken(cookies.get('member-token')!);
-  assert.equal(adminSession?.adminId, staff._id.toString()); assert.equal(memberSession?.memberId, member._id.toString());
+  assert.equal((await POST()).status, 410);
 });
 test('member password sign-in, signup and email verification are disabled', async () => {
   const { POST } = await import('../app/api/member/login/route');
@@ -141,6 +125,12 @@ test('member password sign-in, signup and email verification are disabled', asyn
   ]) {
     assert.equal(response.status, 410);
   }
+});
+test('password recovery and reset are disabled for Google-only accounts', async () => {
+  const { POST: requestReset } = await import('../app/api/member/forgot-password/route');
+  const { POST: resetPassword } = await import('../app/api/member/reset-password/route');
+  assert.equal((await requestReset()).status, 410);
+  assert.equal((await resetPassword()).status, 410);
 });
 test('signing out from either endpoint clears both modes', async t => {
   const memberLogout = await import('../app/api/member/logout/route');

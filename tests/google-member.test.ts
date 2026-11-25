@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
+import Admin from '../lib/models/Admin';
 import Member from '../lib/models/Member';
 
 function isolatedConnection() {
@@ -101,4 +102,67 @@ test('Google sign-in rejects deleted accounts and conflicting identity links', a
     ensureGoogleMember({ googleId: 'google-subject-4', email: 'linked@example.org' }),
     /linked to a different Google account/,
   );
+});
+
+test('shared Google sign-in grants an active administrator both sessions identities', async t => {
+  isolatedConnection();
+  const { resolveGoogleSignInAccount } = await import('../lib/utils/google-auth');
+  const staff = new Admin({
+    email: 'admin@example.org',
+    password: 'legacy-password-hash',
+    fullName: 'Association Admin',
+    role: 'Super Admin',
+    isActive: true,
+  });
+  const member = new Member({
+    email: staff.email,
+    password: 'member-password-hash',
+    emailVerified: true,
+    profileComplete: false,
+  });
+  t.mock.method(Admin, 'findOne', () => Promise.resolve(staff) as unknown as ReturnType<typeof Admin.findOne>);
+  t.mock.method(Member, 'findOne', (filter: { googleId?: string; email?: string; adminId?: unknown }) => {
+    if (filter.googleId) return Promise.resolve(null);
+    if (filter.email) return Promise.resolve(member);
+    if (filter.adminId) return Promise.resolve(null);
+    return Promise.resolve(null);
+  });
+  const saveMember = t.mock.method(member, 'save', () => Promise.resolve(member));
+  t.mock.method(Member, 'findOneAndUpdate', () => Promise.resolve(member) as unknown as ReturnType<typeof Member.findOneAndUpdate>);
+  const saveAdmin = t.mock.method(staff, 'save', () => Promise.resolve(staff));
+
+  const account = await resolveGoogleSignInAccount({
+    googleId: 'google-admin-subject',
+    email: 'ADMIN@example.org',
+    name: 'Google Name',
+  });
+
+  assert.ok(account?.admin);
+  assert.equal(account.admin._id.toString(), staff._id.toString());
+  assert.equal(account.member, member);
+  assert.equal(member.googleId, 'google-admin-subject');
+  assert.ok(staff.lastLogin instanceof Date);
+  assert.equal(saveMember.mock.callCount(), 1);
+  assert.equal(saveAdmin.mock.callCount(), 1);
+});
+
+test('shared Google sign-in rejects inactive administrator accounts', async t => {
+  isolatedConnection();
+  const { resolveGoogleSignInAccount } = await import('../lib/utils/google-auth');
+  const staff = new Admin({
+    email: 'inactive@example.org',
+    password: 'legacy-password-hash',
+    fullName: 'Inactive Admin',
+    isActive: false,
+  });
+  t.mock.method(Admin, 'findOne', () => Promise.resolve(staff) as unknown as ReturnType<typeof Admin.findOne>);
+  const memberLookup = t.mock.method(Member, 'findOne', () => {
+    throw new Error('Inactive admins must not be provisioned as members');
+  });
+
+  assert.equal(await resolveGoogleSignInAccount({
+    googleId: 'google-inactive-subject',
+    email: 'inactive@example.org',
+  }), null);
+  assert.equal(memberLookup.mock.callCount(), 0);
 });

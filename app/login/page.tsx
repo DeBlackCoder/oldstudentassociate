@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 
@@ -13,12 +12,12 @@ export default function LoginPage() {
             <Image src="/logo.png" alt="RSSSOSAA" width={40} height={40} className="object-contain" />
           </div>
           <h1 className="text-xl font-bold">Welcome to RSSSOSAA</h1>
-          <p className="mt-1 text-sm text-white/70">Sign in or create your member account</p>
+          <p className="mt-1 text-sm text-white/70">One secure sign-in for members and administrators</p>
         </header>
 
         <div className="space-y-6 px-8 py-8">
           <p className="text-center text-sm leading-6 text-neutral-600">
-            Continue with Google to access your member dashboard. New members get an account automatically.
+            Continue with Google. New members get an account automatically, and administrators with assigned access are taken to the admin dashboard.
           </p>
           <GoogleSignInButton />
           <p className="text-center text-xs text-neutral-500">
@@ -26,12 +25,6 @@ export default function LoginPage() {
             <a href="mailto:oldstudentassociation94@gmail.com" className="font-medium text-[#1a472a] hover:underline">
               Contact the association
             </a>
-          </p>
-          <p className="text-center text-xs text-neutral-400">
-            Administrator?{' '}
-            <Link href="/admin/login" className="font-medium text-[#1a472a] hover:underline">
-              Sign in here
-            </Link>
           </p>
         </div>
       </section>

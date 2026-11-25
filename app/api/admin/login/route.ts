@@ -1,73 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db/mongodb';
-import Admin from '@/lib/models/Admin';
-import { verifyPassword, setAdminSession } from '@/lib/utils/auth';
-import { setMemberSession } from '@/lib/utils/member-auth';
-import { ensureAdminMember } from '@/lib/utils/admin-member';
+import { NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
-  try {
-    const { email, password } = await request.json();
-
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
-      );
-    }
-
-    await connectDB();
-
-    // Find admin
-    const admin = await Admin.findOne({ email: email.toLowerCase() });
-
-    if (!admin || admin.isDeleted) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
-    }
-
-    if (!admin.isActive) {
-      return NextResponse.json(
-        { error: 'Your account has been deactivated' },
-        { status: 403 }
-      );
-    }
-
-    // Verify password
-    const isValid = await verifyPassword(password, admin.password);
-
-    if (!isValid) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
-    }
-
-    // Update last login
-    admin.lastLogin = new Date();
-    await admin.save();
-
-    const memberAccount = await ensureAdminMember(admin);
-    await setAdminSession(admin._id.toString(), admin.email, admin.role);
-    await setMemberSession(memberAccount._id.toString(), memberAccount.email);
-
-    return NextResponse.json({
-      success: true,
-      redirectTo: '/admin/dashboard',
-      admin: {
-        id: admin._id,
-        fullName: admin.fullName,
-        email: admin.email,
-        role: admin.role
-      }
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    return NextResponse.json(
-      { error: 'An error occurred during login' },
-      { status: 500 }
-    );
-  }
+export async function POST() {
+  return NextResponse.json(
+    { error: 'Administrator sign-in is available through the shared Google login.' },
+    { status: 410 },
+  );
 }
