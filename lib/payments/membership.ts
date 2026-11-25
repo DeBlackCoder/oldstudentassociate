@@ -21,6 +21,6 @@ export async function confirmMembershipTransaction(transaction: PaystackTransact
     ...submissionFieldsOnPayment(applicant),
     paymentStatus: 'paid', paymentMethod: 'paystack', paymentRef: transaction.reference, paymentAmount: transaction.amount,
     paidAt: transaction.paid_at && Number.isFinite(Date.parse(transaction.paid_at)) ? new Date(transaction.paid_at) : new Date(),
-  } }, { new: true });
+  }, $unset: { paymentClaimStatus: '', paymentClaimedAt: '', paymentClaimConfirmedAt: '', paymentClaimConfirmedBy: ''   } }, { new: true });
   return { applicant: updated || applicant, changed: !!updated };
 }

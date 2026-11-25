@@ -44,14 +44,14 @@ export default function ReviewStep({ data, onBack, onEdit, applicationRef, profi
       if (!response.ok) throw new Error(result.error || 'Your form could not be saved');
       // Clear saved draft so the form starts fresh next time
       clearRegistrationDraft(draftStorageKey);
-      if (onSaved) {
-        onSaved();
-      } else if (result.paymentStatus === 'paid' || paymentStatus === 'paid') {
+      if (result.paymentStatus === 'paid' || paymentStatus === 'paid') {
+        onSaved?.();
         router.push('/members/dashboard?tab=application');
       } else {
         const ref = result.applicationRef || applicationRef;
         if (!ref) throw new Error('Your form was saved. Open Registration payment in your dashboard to continue.');
-        router.push('/members/dashboard?tab=registration-payment');
+        onSaved?.();
+        router.push(`/register/payment-choice?ref=${encodeURIComponent(ref)}`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Your form could not be saved');
@@ -136,7 +136,7 @@ export default function ReviewStep({ data, onBack, onEdit, applicationRef, profi
 
       <div className="mt-8 p-4 bg-yellow-50 border border-yellow-300">
         <p className="text-sm text-yellow-800">
-          {paymentStatus === 'paid' ? 'Your registration payment is confirmed. Saving updates your form details while keeping your application status.' : <><strong>Save first, then pay:</strong> Your form stays saved until your registration fee is confirmed. A successful Paystack payment or an admin-confirmed bank transfer submits it automatically for review.</>}
+          {paymentStatus === 'paid' ? 'Your registration payment is confirmed. Saving updates your form details while keeping your application status.' : <><strong>Save first, then choose:</strong> If you already paid the registration fee directly to an administrator, you can report it for confirmation. Otherwise, continue to payment.</>}
         </p>
       </div>
 
@@ -155,7 +155,7 @@ export default function ReviewStep({ data, onBack, onEdit, applicationRef, profi
           disabled={isSubmitting}
           className="w-full sm:w-auto bg-[#1a472a] text-white px-8 py-3 font-medium hover:bg-[#2d5f3f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSubmitting ? 'Saving...' : paymentStatus === 'paid' ? 'Save Changes' : profileSaved ? 'Save Changes & View Payment' : 'Save Form & View Payment'}
+          {isSubmitting ? 'Saving...' : paymentStatus === 'paid' ? 'Save Changes' : profileSaved ? 'Save Changes & Continue' : 'Save Form & Continue'}
         </button>
       </div>
     </div>

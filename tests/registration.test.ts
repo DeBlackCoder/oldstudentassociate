@@ -216,6 +216,34 @@ test('saving a complete form twice retains one Saved application and sends no su
   assert.equal(delivery.emails.length, 0); assert.equal(delivery.notifications.mock.callCount(), 0);
 });
 
+test('a member can report in-person payment without submitting an unpaid application', async t => {
+  const member = await mockMember(t);
+  const applicant = new Applicant({ ...completeForm, memberId: member._id, applicationRef: 'RSSS/2026/040', status: 'Saved', paymentStatus: 'unpaid' });
+  member.applicantId = applicant._id;
+  t.mock.method(Applicant, 'findById', () => selectedResult(applicant) as unknown as ReturnType<typeof Applicant.findById>);
+  t.mock.method(Applicant, 'findOneAndUpdate', (filter: unknown, update: unknown) => {
+    assert.deepEqual(filter, {
+      _id: applicant._id,
+      memberId: member._id,
+      email: member.email,
+      paymentStatus: { $ne: 'paid' },
+      paymentClaimStatus: { $ne: 'pending' },
+    });
+    const values = update as { $set: Record<string, unknown> };
+    Object.assign(applicant, values.$set);
+    return Promise.resolve(applicant) as unknown as ReturnType<typeof Applicant.findOneAndUpdate>;
+  });
+  const { POST } = await import('../app/api/member/registration-payment/claim/route');
+
+  const response = await POST();
+  assert.equal(response.status, 200);
+  assert.equal(applicant.paymentClaimStatus, 'pending');
+  assert.ok(applicant.paymentClaimedAt instanceof Date);
+  assert.equal(applicant.paymentStatus, 'unpaid');
+  assert.equal(applicant.status, 'Saved');
+  assert.equal(applicant.submittedAt, undefined);
+});
+
 test('concurrent first saves recover the unique-account conflict and reuse the winning form reference', async t => {
   const member = await mockMember(t);
   const applicant = new Applicant({ ...completeForm, memberId: member._id, applicationRef: 'RSSS/2026/777', status: 'Saved', paymentStatus: 'unpaid' });
@@ -417,6 +445,51 @@ test('manual bank confirmation submits a saved form once and records one audit e
   assert.ok([400, 409].includes((await POST(request(), context)).status));
   assert.equal(writes.length, 1); assert.equal(save.mock.callCount(), 0); assert.equal(audit.mock.callCount(), 1);
   assert.equal(applicant.submittedAt.toISOString(), submittedAt);
+});
+
+test('admin confirmation of an in-person payment records the claim and submits the form', async t => {
+  const admin = await mockAdmin(t);
+  const applicant = new Applicant({
+    ...completeForm,
+    applicationRef: 'RSSS/2026/002',
+    status: 'Saved',
+    paymentStatus: 'unpaid',
+    paymentExpectedAmount: 200000,
+    paymentClaimStatus: 'pending',
+    paymentClaimedAt: now,
+  });
+  t.mock.method(Applicant, 'findById', () => selectedResult(applicant) as unknown as ReturnType<typeof Applicant.findById>);
+  let write: { filter: unknown; update: unknown } | undefined;
+  t.mock.method(Applicant, 'findOneAndUpdate', (filter: unknown, update: unknown) => {
+    write = { filter, update };
+    applyUpdate(applicant, update);
+    return Promise.resolve(applicant) as unknown as ReturnType<typeof Applicant.findOneAndUpdate>;
+  });
+  let auditAction = '';
+  t.mock.method(AuditLog, 'create', (record: { action: string }) => {
+    auditAction = record.action;
+    return Promise.resolve({}) as unknown as ReturnType<typeof AuditLog.create>;
+  });
+  suppressDelivery(t);
+  const { POST } = await import('../app/api/admin/applications/[id]/mark-paid/route');
+  const request = new NextRequest(`http://localhost/api/admin/applications/${applicant._id}/mark-paid`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ remarks: 'Confirmed with receiving administrator' }),
+  });
+  const response = await POST(request, { params: Promise.resolve({ id: applicant._id.toString() }) });
+
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).success, true);
+  assert.equal((write?.filter as { paymentClaimStatus: string }).paymentClaimStatus, 'pending');
+  const update = write?.update as { $set: Record<string, unknown> };
+  assert.equal(update.$set.paymentStatus, 'paid');
+  assert.equal(update.$set.paymentMethod, 'admin');
+  assert.equal(update.$set.paymentClaimStatus, 'confirmed');
+  assert.equal(update.$set.paymentClaimConfirmedBy, admin._id);
+  assert.equal(update.$set.status, 'Pending');
+  assert.ok(update.$set.submittedAt instanceof Date);
+  assert.equal(auditAction, 'Confirmed in-person registration payment');
 });
 
 test('a read-only verifier cannot manually confirm a registration payment', async t => {

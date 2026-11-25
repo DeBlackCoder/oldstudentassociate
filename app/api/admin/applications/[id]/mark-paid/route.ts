@@ -15,14 +15,26 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!application || isHiddenAccount(application.email)) throw new HttpError(404, 'Saved registration form not found');
     if (application.paymentStatus === 'paid') throw new HttpError(409, 'Registration payment is already confirmed');
     const now = new Date();
-    const updated = await Applicant.findOneAndUpdate({ _id: application._id, paymentStatus: { $ne: 'paid' } }, { $set: {
-      ...submissionFieldsOnPayment(application, now), paymentStatus: 'paid', paymentMethod: 'bank',
-      paymentRef: `BANK-TRANSFER-${application._id}-${now.getTime()}`, paymentAmount: application.paymentExpectedAmount || registrationFeeKobo(), paidAt: now,
+    const physicalPaymentClaim = application.paymentClaimStatus === 'pending';
+    const paymentMethod = physicalPaymentClaim ? 'admin' : 'bank';
+    const paymentReference = physicalPaymentClaim
+      ? `CASH-ADMIN-CONFIRMED-${application._id}-${now.getTime()}`
+      : `BANK-TRANSFER-${application._id}-${now.getTime()}`;
+    const updated = await Applicant.findOneAndUpdate({
+      _id: application._id,
+      paymentStatus: { $ne: 'paid' },
+      paymentClaimStatus: physicalPaymentClaim ? 'pending' : { $ne: 'pending' },
+    }, { $set: {
+      ...submissionFieldsOnPayment(application, now), paymentStatus: 'paid', paymentMethod,
+      paymentRef: paymentReference, paymentAmount: application.paymentExpectedAmount || registrationFeeKobo(), paidAt: now,
+      ...(physicalPaymentClaim ? { paymentClaimStatus: 'confirmed', paymentClaimConfirmedAt: now, paymentClaimConfirmedBy: admin._id } : {}),
       ...(remarks ? { adminRemarks: remarks } : {}),
-    } }, { new: true, runValidators: true });
+    }, ...(physicalPaymentClaim ? {} : { $unset: { paymentClaimStatus: '', paymentClaimedAt: '', paymentClaimConfirmedAt: '', paymentClaimConfirmedBy: '' } }) }, { new: true, runValidators: true });
     if (!updated) throw new HttpError(409, 'This registration payment has already been confirmed');
-    await logCommunityAction(admin, 'Confirmed registration bank transfer', id, `Reference ${updated.applicationRef}; NGN ${(updated.paymentAmount || 0) / 100}; saved form submitted automatically. ${remarks || ''}`);
+    await logCommunityAction(admin, physicalPaymentClaim ? 'Confirmed in-person registration payment' : 'Confirmed registration bank transfer', id, `Reference ${updated.applicationRef}; NGN ${(updated.paymentAmount || 0) / 100}; saved form submitted automatically. ${remarks || ''}`);
     await notifyMembershipPayment(updated);
-    return NextResponse.json({ success: true, message: 'Registration payment confirmed. The saved form has been submitted automatically for review.' });
+    return NextResponse.json({ success: true, message: physicalPaymentClaim
+      ? 'In-person payment confirmed. The saved form has been submitted automatically for review.'
+      : 'Registration payment confirmed. The saved form has been submitted automatically for review.' });
   } catch (error) { return routeError(error); }
 }

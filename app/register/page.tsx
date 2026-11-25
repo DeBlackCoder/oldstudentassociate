@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ProgressIndicator from '@/components/forms/ProgressIndicator';
 import { Card, CardContent } from '@/components/ui/card';
@@ -115,7 +114,6 @@ export function clearRegistrationDraft(storageKey = STORAGE_KEY) {
 }
 
 export function RegistrationForm({ embedded = false, onSaved }: { embedded?: boolean; onSaved?: () => void }) {
-  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<RegistrationData>(EMPTY_FORM);
   // When true, "Edit" from ReviewStep sends you back to review after saving
@@ -313,7 +311,7 @@ export function RegistrationForm({ embedded = false, onSaved }: { embedded?: boo
                 profileSaved={profileSaved}
                 paymentStatus={paymentStatus}
                 draftStorageKey={draftStorageKey}
-                onSaved={embedded ? () => { onSaved?.(); router.push(`/members/dashboard?tab=${paymentStatus === 'paid' ? 'application' : 'registration-payment'}`); } : undefined}
+                onSaved={embedded ? () => onSaved?.() : undefined}
               />
             )}
           </CardContent>

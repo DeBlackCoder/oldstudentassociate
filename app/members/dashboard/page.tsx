@@ -26,6 +26,7 @@ interface MemberData {
   applicationStatus?: 'Saved' | 'Pending' | 'Approved' | 'Rejected' | null;
   registrationFeeKobo?: number;
   paymentStatus: 'unpaid' | 'paid' | 'failed';
+  paymentClaimStatus?: 'pending' | 'confirmed';
   membershipNumber?: string;
   applicationRef?: string;
   secondarySchool?: string;
@@ -209,10 +210,12 @@ function MemberDashboardContent() {
             <p className="text-xs font-semibold uppercase tracking-widest">One-time membership registration</p>
             <h1 className="mt-2 text-2xl font-bold">Registration payment</h1>
             <p className="mt-4 text-4xl font-bold">{registrationFee}</p>
-            <p className="mt-3 text-sm leading-6">{isPaid ? 'Your registration fee has been confirmed. Your saved form was submitted automatically for review.' : profileComplete ? 'Your completed form is saved. It will be submitted automatically when your registration payment is confirmed.' : 'Complete and save your registration form before making this payment.'}</p>
+            <p className="mt-3 text-sm leading-6">{isPaid ? 'Your registration fee has been confirmed. Your saved form was submitted automatically for review.' : member.paymentClaimStatus === 'pending' ? 'You reported paying the registration fee in person. An administrator must confirm receipt before your application is submitted for review.' : profileComplete ? 'Your completed form is saved. It will be submitted automatically when your registration payment is confirmed.' : 'Complete and save your registration form before making this payment.'}</p>
             {member.applicationRef && <p className="mt-3 break-all text-sm">Application reference: <strong>{member.applicationRef}</strong></p>}
             <div className="mt-6 flex flex-wrap gap-3">
-              {profileComplete && !isPaid && member.applicationRef ? <Link href={`/register/payment?ref=${encodeURIComponent(member.applicationRef)}`} className="inline-flex items-center gap-2 rounded-full bg-[#1a472a] px-6 py-3 text-sm font-semibold text-white">Choose Paystack or bank transfer<ArrowRight className="h-4 w-4" /></Link> : <button type="button" onClick={() => switchTab(isPaid ? 'application' : 'edit-form')} className="rounded-full bg-[#1a472a] px-6 py-3 text-sm font-semibold text-white">{isPaid ? 'View application status' : 'Complete registration form'}</button>}
+              {member.paymentClaimStatus === 'pending'
+                ? <Link href="/register/payment-choice" className="inline-flex items-center gap-2 rounded-full border border-[#1a472a] px-6 py-3 text-sm font-semibold text-[#1a472a]">Check reported payment status<ArrowRight className="h-4 w-4" /></Link>
+                : profileComplete && !isPaid && member.applicationRef ? <Link href={`/register/payment-choice?ref=${encodeURIComponent(member.applicationRef)}`} className="inline-flex items-center gap-2 rounded-full bg-[#1a472a] px-6 py-3 text-sm font-semibold text-white">Continue registration payment<ArrowRight className="h-4 w-4" /></Link> : <button type="button" onClick={() => switchTab(isPaid ? 'application' : 'edit-form')} className="rounded-full bg-[#1a472a] px-6 py-3 text-sm font-semibold text-white">{isPaid ? 'View application status' : 'Complete registration form'}</button>}
               <button type="button" onClick={() => setRefreshVersion(value => value + 1)} className="rounded-full border border-neutral-300 px-6 py-3 text-sm font-semibold text-black">Refresh payment status</button>
             </div>
           </div>
