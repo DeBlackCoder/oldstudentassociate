@@ -2,7 +2,7 @@
 
 ## Member workflow
 
-1. Create an account, verify its email address and sign in.
+1. Sign in or create your member account with a Google account whose email is verified. See [Google sign-in setup](./GOOGLE_SIGNIN.md).
 2. Complete the membership form and save it. This stores a complete application under your account with one application reference. It does not submit an unpaid application for membership review.
 3. Open the dashboard's **Registration payment** tab to pay the separate one-time membership registration fee. Paystack confirms successful payments automatically. A bank transfer remains unconfirmed until an authorised administrator verifies receipt of the money.
 4. Confirming the registration payment automatically submits the saved form for review. No second form submission is needed.

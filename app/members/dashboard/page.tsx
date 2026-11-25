@@ -55,6 +55,7 @@ function MemberDashboardContent() {
   const [member, setMember] = useState<MemberData | null>(null);
   const [loading, setLoading] = useState(true);
   const requestedTab = searchParams.get('tab') as Tab | null;
+  const hasTabParam = searchParams.has('tab');
   const activeTab: Tab = requestedTab && DASHBOARD_TABS.includes(requestedTab) ? requestedTab : 'overview';
   const [events, setEvents] = useState<EventItem[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
@@ -112,6 +113,13 @@ function MemberDashboardContent() {
       .catch(() => router.push('/login'))
       .finally(() => setLoading(false));
   }, [router, refreshVersion]);
+
+  const needsRegistrationForm = member !== null && !member.profileComplete;
+  useEffect(() => {
+    if (needsRegistrationForm && !hasTabParam) {
+      router.replace('/members/dashboard?tab=edit-form');
+    }
+  }, [hasTabParam, needsRegistrationForm, router]);
 
   useEffect(() => {
     if (activeTab !== 'events') return;

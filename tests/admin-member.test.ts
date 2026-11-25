@@ -4,7 +4,6 @@ import mongoose from 'mongoose';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import bcrypt from 'bcryptjs';
-import nodemailer from 'nodemailer';
 import { NextRequest } from 'next/server';
 import Admin from '../lib/models/Admin';
 import Member from '../lib/models/Member';
@@ -40,8 +39,8 @@ function isolatedConnection() {
 function selectedResult<T>(value: T) {
   return Object.assign(Promise.resolve(value), { select: () => Promise.resolve(value) });
 }
-function loginRequest() {
-  return new NextRequest('http://localhost/api/member/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: admin.email, password: 'test-password' }) });
+function adminLoginRequest() {
+  return new NextRequest('http://localhost/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: admin.email, password: 'test-password' }) });
 }
 
 test('a new admin receives a regular member account without membership approval or payment', async t => {
@@ -116,30 +115,32 @@ test('malformed and unknown-role admin tokens are rejected', async () => {
   assert.equal(await verifyToken(unknown), null);
 });
 
-test('the real login route sets both sessions and sends admins to the normal dashboard', async t => {
+test('the dedicated admin login route sets both sessions', async t => {
   isolatedConnection(); const cookies = mockCookies(t);
   const staff = new Admin({ ...admin, role: 'Super Admin', password: await bcrypt.hash('test-password', 4) });
   const member = new Member({ email: admin.email, password: 'member-hash', adminId: staff._id, emailVerified: true });
-  t.mock.method(Admin, 'findOne', () => ({ select: () => Promise.resolve(staff) }) as unknown as ReturnType<typeof Admin.findOne>);
+  t.mock.method(Admin, 'findOne', () => Promise.resolve(staff) as unknown as ReturnType<typeof Admin.findOne>);
   t.mock.method(staff, 'save', () => Promise.resolve(staff));
   t.mock.method(Member, 'findOne', () => Promise.resolve(member) as unknown as ReturnType<typeof Member.findOne>);
-  const { POST } = await import('../app/api/member/login/route');
-  const response = await POST(loginRequest());
+  const { POST } = await import('../app/api/admin/login/route');
+  const response = await POST(adminLoginRequest());
   assert.equal(response.status, 200);
-  const body = await response.json(); assert.equal(body.redirectTo, '/members/dashboard'); assert.equal(body.role, 'admin');
+  const body = await response.json(); assert.equal(body.redirectTo, '/admin/dashboard');
   const adminSession = await verifyToken(cookies.get('admin-token')!);
   const memberSession = await verifyMemberToken(cookies.get('member-token')!);
   assert.equal(adminSession?.adminId, staff._id.toString()); assert.equal(memberSession?.memberId, member._id.toString());
 });
-test('normal member login clears a previous account’s admin session', async t => {
-  isolatedConnection(); const cookies = mockCookies(t, { 'admin-token': 'previous-admin-cookie' });
-  const member = new Member({ email: admin.email, password: await bcrypt.hash('test-password', 4), emailVerified: true });
-  t.mock.method(Admin, 'findOne', () => ({ select: () => Promise.resolve(null) }) as unknown as ReturnType<typeof Admin.findOne>);
-  t.mock.method(Member, 'findOne', () => ({ select: () => Promise.resolve(member) }) as unknown as ReturnType<typeof Member.findOne>);
+test('member password sign-in, signup and email verification are disabled', async () => {
   const { POST } = await import('../app/api/member/login/route');
-  const response = await POST(loginRequest());
-  assert.equal(response.status, 200); assert.equal(cookies.has('admin-token'), false);
-  assert.equal((await verifyMemberToken(cookies.get('member-token')!))?.memberId, member._id.toString());
+  const { POST: signup } = await import('../app/api/member/signup/route');
+  const { POST: verifyEmail } = await import('../app/api/member/verify-email/route');
+  for (const response of [
+    await POST(),
+    await signup(),
+    await verifyEmail(),
+  ]) {
+    assert.equal(response.status, 410);
+  }
 });
 test('signing out from either endpoint clears both modes', async t => {
   const memberLogout = await import('../app/api/member/logout/route');
@@ -188,62 +189,20 @@ test('the account endpoint shows Admin Panel only for the matching active admin'
   staff.isActive = true; cookies.set('member-token', memberToken); member.adminId = new mongoose.Types.ObjectId();
   assert.equal((await (await GET()).json()).member.canAccessAdminPanel, false);
 });
-test('a member can retry failed verification email, verify the code, and receive an approved membership', async t => {
+test('a Google-authenticated member can receive membership approval', async t => {
   isolatedConnection();
-  const memberEmail = 'new-member@example.org';
-  const member = new Member({ email: memberEmail, password: 'initial-hash', emailVerified: false });
-  let lookupCount = 0;
-  const findMember = t.mock.method(Member, 'findOne', () => {
-    const result = lookupCount++ === 0 ? null : member;
-    return Object.assign(Promise.resolve(result), { select: () => Promise.resolve(result) }) as unknown as ReturnType<typeof Member.findOne>;
-  });
-  t.mock.method(Member, 'create', (value: unknown) => {
-    Object.assign(member, value);
-    return Promise.resolve(member) as unknown as ReturnType<typeof Member.create>;
-  });
-  t.mock.method(member, 'save', () => Promise.resolve(member));
-
-  let failEmail = true;
-  const sentEmails: unknown[] = [];
-  const transport = {
-    sendMail: async (message: unknown) => {
-      sentEmails.push(message);
-      if (failEmail) throw new Error('Isolated SMTP failure');
-      return { messageId: 'isolated-onboarding-email' };
-    },
-  };
-  t.mock.method(nodemailer, 'createTransport', () => transport as unknown as ReturnType<typeof nodemailer.createTransport>);
   t.mock.method(console, 'error', () => {});
-
-  const previousNodeEnv = process.env.NODE_ENV;
-  Reflect.set(process.env, 'NODE_ENV', 'production');
-  t.after(() => { if (previousNodeEnv === undefined) Reflect.deleteProperty(process.env, 'NODE_ENV'); else Reflect.set(process.env, 'NODE_ENV', previousNodeEnv); });
-
-  const cookies = mockCookies(t);
+  const memberEmail = 'new-member@example.org';
+  const member = new Member({
+    email: memberEmail, password: 'google-managed-hash', googleId: 'google-subject-approval',
+    emailVerified: true,
+  });
+  const cookies = mockCookies(t, {
+    'member-token': await createMemberToken(member._id.toString(), member.email),
+  });
   const request = (url: string, body: unknown) => new NextRequest(url, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   });
-  const { POST: signup } = await import('../app/api/member/signup/route');
-  const failedSignup = await signup(request('http://localhost/api/member/signup', { email: memberEmail, password: 'member-password' }));
-  assert.equal(failedSignup.status, 503);
-  assert.equal((await failedSignup.json()).error, 'Your account was saved, but we could not send the verification email. Please try again.');
-  assert.equal(member.emailVerified, false);
-
-  Reflect.set(process.env, 'NODE_ENV', 'test');
-  failEmail = false;
-  const resent = await signup(request('http://localhost/api/member/signup', { email: memberEmail, password: 'member-password' }));
-  assert.equal(resent.status, 200);
-  const { devCode } = await resent.json();
-  assert.match(devCode, /^\d{4}$/);
-  assert.equal(sentEmails.length, 2);
-  assert.equal(findMember.mock.callCount(), 2);
-
-  const { POST: verifyEmail } = await import('../app/api/member/verify-email/route');
-  const verified = await verifyEmail(request('http://localhost/api/member/verify-email', { email: memberEmail, code: devCode }));
-  assert.equal(verified.status, 200);
-  assert.equal(member.emailVerified, true);
-  assert.equal(member.emailVerificationCode, undefined);
-  assert.ok(await verifyMemberToken(cookies.get('member-token')!));
 
   const staff = new Admin({ ...admin, role: 'Super Admin' });
   const adminToken = await createToken({ adminId: staff._id.toString(), email: staff.email, role: staff.role });

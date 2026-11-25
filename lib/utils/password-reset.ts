@@ -7,7 +7,7 @@ import { RESET_COOLDOWN_MS, RESET_EXPIRY_MS, generateResetToken, hashResetToken,
 
 export class PasswordResetError extends Error {}
 
-async function accountForEmail(email: string) {
+async function accountForEmail(email: string, adminOnly: boolean) {
   const admin = await Admin.findOne({ email }).select('email isActive');
   if (admin) {
     if (!admin.isActive) return null;
@@ -18,6 +18,7 @@ async function accountForEmail(email: string) {
     ] }).select('email adminId');
     return { accountKey: `admin:${admin._id}`, adminId: admin._id, memberId: member?._id, deliveryEmail: admin.email };
   }
+  if (adminOnly) return null;
   const member = await Member.findOne({ email }).select('email adminId');
   if (!member) return null;
   if (member.adminId) {
@@ -29,8 +30,12 @@ async function accountForEmail(email: string) {
 }
 
 /** The caller returns the same message for missing accounts, cooldown and delivery errors. */
-export async function requestPasswordReset(email: string, deliverEmail = sendPasswordResetEmail) {
-  const account = await accountForEmail(email);
+export async function requestPasswordReset(
+  email: string,
+  deliverEmail = sendPasswordResetEmail,
+  options: { adminOnly?: boolean } = {},
+) {
+  const account = await accountForEmail(email, options.adminOnly === true);
   if (!account) return;
   const { token, tokenHash } = generateResetToken();
   const resetUrl = passwordResetUrl(token);
@@ -62,7 +67,7 @@ export async function requestPasswordReset(email: string, deliverEmail = sendPas
   }
 }
 
-export async function resetAccountPassword(token: string, password: string) {
+export async function resetAccountPassword(token: string, password: string, options: { adminOnly?: boolean } = {}) {
   const tokenHash = hashResetToken(token);
   // Hash before claiming the token so validation/hash failures do not consume it.
   const passwordHash = await bcrypt.hash(password, 12);
@@ -73,6 +78,9 @@ export async function resetAccountPassword(token: string, password: string) {
   if (!record) throw new PasswordResetError('This reset link has expired or has already been used. Request a new one.');
 
   try {
+    if (options.adminOnly && !record.adminId) {
+      throw new PasswordResetError('This reset link is invalid. Request a new one.');
+    }
     if (record.adminId) {
       const admin = await Admin.findById(record.adminId).select('email isActive');
       if (!admin?.isActive) throw new PasswordResetError('This account is unavailable. Contact the association for help.');

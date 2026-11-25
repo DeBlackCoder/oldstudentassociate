@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   }
   try {
     await connectDB();
-    await requestPasswordReset(parsed.data.email);
+    await requestPasswordReset(parsed.data.email, undefined, { adminOnly: true });
   } catch {
     console.error('Password reset request could not be processed.');
     // Email delivery failures cannot reveal whether an email belongs to an account.

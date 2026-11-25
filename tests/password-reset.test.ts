@@ -100,6 +100,16 @@ test('a member reset claims the token before writing a hashed password and times
   assert.equal(adminUpdate.mock.callCount(), 0);
 });
 
+test('administrator recovery cannot redeem an old member-only reset link', async context => {
+  claim(context, resetRecord());
+  const memberUpdate = context.mock.method(Member, 'updateOne', () => { throw new Error('Must not update member password'); });
+  await assert.rejects(
+    resetAccountPassword(token, password, { adminOnly: true }),
+    /reset link is invalid/,
+  );
+  assert.equal(memberUpdate.mock.callCount(), 0);
+});
+
 test('active linked admin and member accounts receive the same password hash and change time', async context => {
   const staff = new Admin({ fullName: 'Fixture Admin', email: 'admin@example.org', password: 'old-hash', isActive: true });
   const member = new Member({ email: staff.email, password: 'old-hash', adminId: staff._id });
@@ -144,6 +154,17 @@ test('a missing account returns without creating a token or sending email', asyn
   context.mock.method(Member, 'findOne', () => selected(null) as unknown as ReturnType<typeof Member.findOne>);
   const init = context.mock.method(PasswordReset, 'init', () => { throw new Error('Must not create a token'); });
   await requestPasswordReset('unknown@example.org', async () => { throw new Error('Must not send email'); });
+  assert.equal(init.mock.callCount(), 0);
+});
+
+test('administrator recovery does not issue password resets to member-only accounts', async context => {
+  context.mock.method(Admin, 'findOne', () => selected(null) as unknown as ReturnType<typeof Admin.findOne>);
+  const memberLookup = context.mock.method(Member, 'findOne', () => selected(new Member({
+    email: 'member@example.org', password: 'old-hash',
+  })) as unknown as ReturnType<typeof Member.findOne>);
+  const init = context.mock.method(PasswordReset, 'init', () => { throw new Error('Must not create a token'); });
+  await requestPasswordReset('member@example.org', undefined, { adminOnly: true });
+  assert.equal(memberLookup.mock.callCount(), 0);
   assert.equal(init.mock.callCount(), 0);
 });
 

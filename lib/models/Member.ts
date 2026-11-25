@@ -3,6 +3,7 @@ import mongoose, { Schema, models, Model } from 'mongoose';
 export interface IMember {
   email: string;
   password: string;
+  googleId?: string;
   passwordChangedAt?: Date;
   emailVerified: boolean;
   isDeleted?: boolean;
@@ -23,6 +24,7 @@ export interface IMember {
 const MemberSchema = new Schema<IMember>({
   email: { type: String, required: true, unique: true, lowercase: true, index: true },
   password: { type: String, required: true, select: false },
+  googleId: { type: String, unique: true, sparse: true, index: true },
   passwordChangedAt: { type: Date },
   emailVerified: { type: Boolean, default: false },
   isDeleted: { type: Boolean, default: false, index: true },

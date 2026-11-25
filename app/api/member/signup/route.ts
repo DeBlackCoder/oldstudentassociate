@@ -1,83 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
-import connectDB from '@/lib/db/mongodb';
-import Member from '@/lib/models/Member';
-import { generateVerificationCode } from '@/lib/utils/member-auth';
-import { sendVerificationEmail } from '@/lib/utils/email';
+import { NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
-  try {
-    const { email, password } = await request.json();
-
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 });
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 });
-    }
-
-    if (password.length < 8) {
-      return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 });
-    }
-
-    await connectDB();
-
-    const existing = await Member.findOne({ email: email.toLowerCase() });
-    if (existing && (existing.emailVerified || existing.isDeleted)) {
-      return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 400 });
-    }
-
-    const code = generateVerificationCode();
-    const expiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    if (existing && !existing.emailVerified) {
-      existing.password = hashedPassword;
-      existing.emailVerificationCode = code;
-      existing.emailVerificationExpiry = expiry;
-      await existing.save();
-    } else {
-      await Member.create({
-        email: email.toLowerCase(),
-        password: hashedPassword,
-        emailVerified: false,
-        emailVerificationCode: code,
-        emailVerificationExpiry: expiry,
-        profileComplete: false,
-      });
-    }
-
-    let verificationEmailSent = true;
-    try {
-      await sendVerificationEmail(email.toLowerCase(), code);
-    } catch (emailErr) {
-      console.error('Failed to send verification email:', emailErr);
-      verificationEmailSent = false;
-      if (process.env.NODE_ENV === 'production') {
-        return NextResponse.json(
-          { error: 'Your account was saved, but we could not send the verification email. Please try again.' },
-          { status: 503 },
-        );
-      }
-    }
-
-    const response: Record<string, unknown> = {
-      success: true,
-      message: verificationEmailSent
-        ? 'Verification code sent to your email.'
-        : 'Email could not be sent. Use the development code below.',
-    };
-
-    // In dev, also return the code so you can test without real email
-    if (process.env.NODE_ENV !== 'production') {
-      response.devCode = code;
-    }
-
-    return NextResponse.json(response);
-  } catch (error) {
-    console.error('Signup error:', error);
-    return NextResponse.json({ error: 'Signup failed. Please try again.' }, { status: 500 });
-  }
+export async function POST() {
+  return NextResponse.json(
+    { error: 'Create your member account by continuing with Google.' },
+    { status: 410 },
+  );
 }

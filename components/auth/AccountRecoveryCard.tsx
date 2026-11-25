@@ -20,7 +20,7 @@ export default function AccountRecoveryCard({ title, description, children }: {
           <h1 className="text-2xl font-bold tracking-tight text-[#121417]">{title}</h1>
           <p className="mb-7 mt-3 text-sm leading-6 text-neutral-500">{description}</p>
           {children}
-          <Link href="/login" className="mt-7 flex items-center justify-center gap-2 text-sm font-medium text-[#173e2c] hover:underline">
+          <Link href="/admin/login" className="mt-7 flex items-center justify-center gap-2 text-sm font-medium text-[#173e2c] hover:underline">
             <ArrowLeft size={15} aria-hidden="true" /> Back to sign in
           </Link>
         </div>

@@ -44,7 +44,7 @@ export default function ResetPasswordForm({ token }: { token: string }) {
           <CheckCircle2 size={25} className="mb-3 text-emerald-700" aria-hidden="true" />
           <h2 className="text-base font-semibold text-emerald-950">Password updated</h2>
           <p className="mt-2 text-sm leading-6 text-emerald-900">{message}</p>
-          <Link href="/login" className="mt-4 flex h-11 items-center justify-center rounded-xl bg-[#173e2c] text-sm font-semibold text-white">Sign in</Link>
+          <Link href="/admin/login" className="mt-4 flex h-11 items-center justify-center rounded-xl bg-[#173e2c] text-sm font-semibold text-white">Administrator sign in</Link>
         </div>
       ) : (
         <form onSubmit={submit} className="space-y-5">

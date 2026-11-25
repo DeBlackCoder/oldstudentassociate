@@ -18,10 +18,10 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   try {
     await connectDB();
-    await resetAccountPassword(parsed.data.token, parsed.data.password);
+    await resetAccountPassword(parsed.data.token, parsed.data.password, { adminOnly: true });
     await clearAdminSession();
     await clearMemberSession();
-    return NextResponse.json({ message: 'Your password has been updated. Sign in with your new password.' });
+    return NextResponse.json({ message: 'Your administrator password has been updated. Sign in again.' });
   } catch (error) {
     if (error instanceof PasswordResetError) return NextResponse.json({ error: error.message }, { status: 400 });
     console.error('Password reset could not be completed.');

@@ -1,6 +1,6 @@
 # Password recovery
 
-The sign-in page now links to `/forgot-password`. Recovery supports regular member accounts and active administrator accounts through the same flow.
+Administrator sign-in at `/admin/login` links to `/forgot-password`. Member sign-in uses Google and does not use password recovery.
 
 1. Enter the account email and select **Send reset link**.
 2. Open the email and select **Choose a new password** within 30 minutes.
@@ -35,12 +35,12 @@ Missing mail credentials or an invalid application URL produce an availability m
 - Links expire after 30 minutes. Expiration is checked during redemption; MongoDB TTL cleanup only removes expired records.
 - `POST /api/member/reset-password` atomically claims an unused token before changing a password. A link cannot be reused after a successful reset.
 - Passwords are hashed with bcrypt. The form requires 8–72 characters; UTF-8 input must also fit within bcrypt's 72-byte limit.
-- A reset updates both an active administrator and the member profile linked to that administrator. A profile assigned to another administrator is never changed merely because an email matches. Requests made through an older linked member email deliver the recovery email to the administrator's current address.
+- A reset updates an active administrator and the member profile linked to that administrator. A profile assigned to another administrator is never changed merely because an email matches. Recovery requests use the administrator's current email.
 - Both account models record `passwordChangedAt`. Session getters check signed issue times against that timestamp to reject sessions created before the change. The browser performing the reset has both session cookies cleared.
 - Admin session getters also read the current role and active status so promotions and deactivation apply immediately.
 - The recovery pages disable indexing and set a no-referrer policy. The successful reset removes the token from the address bar.
 
-Recovery leaves profile information, membership applications, payments, scholarship applications, and administrator/member links intact. It does not mark an unverified ordinary member's email as verified.
+Recovery leaves profile information, membership applications, payments, scholarship applications, and administrator/member links intact.
 
 If a database write fails, the reset operation releases the claim so the same unexpired link can be retried. Linked account writes use the same password hash and timestamp; retries safely complete either write if an earlier attempt partially succeeded. There is no requirement for MongoDB replica-set transactions.
 

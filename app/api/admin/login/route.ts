@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      redirectTo: '/members/dashboard',
+      redirectTo: '/admin/dashboard',
       admin: {
         id: admin._id,
         fullName: admin.fullName,

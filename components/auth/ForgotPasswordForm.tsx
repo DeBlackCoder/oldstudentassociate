@@ -25,7 +25,7 @@ export default function ForgotPasswordForm() {
   }
 
   return (
-    <AccountRecoveryCard title="Forgot your password?" description="Enter your account email and we’ll send a link to choose a new password. This works for member and admin accounts.">
+    <AccountRecoveryCard title="Forgot your administrator password?" description="Enter your administrator account email and we’ll send a link to choose a new password.">
       {message ? (
         <div role="status" className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
           <CheckCircle2 size={25} className="mb-3 text-emerald-700" aria-hidden="true" />
