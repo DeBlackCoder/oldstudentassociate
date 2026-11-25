@@ -20,6 +20,7 @@ When signed-in members or administrators return to the homepage, the membership 
 | --- | --- | --- |
 | Saved, unpaid | A complete form is stored, awaiting confirmed registration payment. | No |
 | Pending, payment verification | The application is submitted; an administrator must confirm the in-person payment before it can be accepted. | No |
+| Pending, payment report rejected | The in-person payment report was not confirmed. The application remains submitted but unpaid; the member can retry the report or pay online. | No |
 | Pending, paid | Payment was confirmed and the submitted application is available for acceptance review. | Yes |
 | Approved, paid | The administrator approved the submitted application. | Already reviewed |
 | Rejected, paid | The administrator rejected the submitted application. | Already reviewed |
@@ -28,7 +29,7 @@ The registration payment is separate from the ₦2,000 quarterly association due
 
 Older applications that were marked Pending before payment are withheld from the formal review list until their registration payment is confirmed. Their existing details and application references are preserved. Administrators may inspect saved/unpaid records for bank-transfer verification, but cannot approve or reject them before payment.
 
-Admins and Super Admins open **Admin Panel → Payments → Registration fee review** (`/admin/dashboard/payments`) to verify bank transfers and in-person payment reports. An in-person report submits the application immediately, but the application remains unavailable for acceptance until payment is confirmed. After confirmation, open the linked application or **Applications** to accept or reject it. Verifier accounts can inspect this payment list but cannot confirm payments.
+Admins and Super Admins open **Admin Panel → Payments → Registration fee review** (`/admin/dashboard/payments`) to verify bank transfers and in-person payment reports. An in-person report submits the application immediately, but the application remains unavailable for acceptance until payment is confirmed. Admins may reject an unconfirmed in-person report with a reason; the applicant is emailed and can retry the report or continue to online payment. This does not reject the membership application. After payment confirmation, open the linked application or **Applications** to accept or reject it. Verifier accounts can inspect this payment list but cannot confirm or reject payment reports.
 
 ## Payment confirmation
 
@@ -51,8 +52,9 @@ Application confirmation messages and new-registration notifications are trigger
 | `POST /api/payment/webhook` | Process signed payment notifications and automatically submit a saved application. |
 | `GET /api/admin/registration-payments` | Return saved/unpaid registration forms for bank-payment verification. |
 | `POST /api/admin/applications/[id]/mark-paid` | Verify a received bank transfer and automatically submit the saved application. |
+| `POST /api/admin/applications/[id]/reject-payment-claim` | Reject a pending in-person payment report, record the reason, and notify the member. |
 
-The Member record links to its single Applicant record. Applicant status distinguishes Saved forms from submitted Pending applications. `submittedAt` is set on actual submission after payment; saving an unpaid form does not set that date.
+The Member record links to its single Applicant record. Applicant status distinguishes Saved forms from submitted Pending applications. `submittedAt` is set when payment is confirmed or an in-person payment report submits the application; saving an unpaid form does not set that date.
 
 ## Validation
 

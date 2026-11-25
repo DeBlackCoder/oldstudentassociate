@@ -40,10 +40,13 @@ export interface IApplicant {
   paymentAmount?: number;
   paymentExpectedAmount?: number;
   paymentMethod?: 'paystack' | 'bank' | 'admin';
-  paymentClaimStatus?: 'pending' | 'confirmed';
+  paymentClaimStatus?: 'pending' | 'confirmed' | 'rejected';
   paymentClaimedAt?: Date;
   paymentClaimConfirmedAt?: Date;
   paymentClaimConfirmedBy?: mongoose.Types.ObjectId;
+  paymentClaimRejectedAt?: Date;
+  paymentClaimRejectedBy?: mongoose.Types.ObjectId;
+  paymentClaimRejectionReason?: string;
   paidAt?: Date;
 
   // Application Status
@@ -105,10 +108,13 @@ const ApplicantSchema = new Schema<IApplicant>({
   paymentAmount: { type: Number },
   paymentExpectedAmount: { type: Number },
   paymentMethod: { type: String, enum: ['paystack', 'bank', 'admin'] },
-  paymentClaimStatus: { type: String, enum: ['pending', 'confirmed'], index: true },
+  paymentClaimStatus: { type: String, enum: ['pending', 'confirmed', 'rejected'], index: true },
   paymentClaimedAt: { type: Date },
   paymentClaimConfirmedAt: { type: Date },
   paymentClaimConfirmedBy: { type: Schema.Types.ObjectId, ref: 'Admin' },
+  paymentClaimRejectedAt: { type: Date },
+  paymentClaimRejectedBy: { type: Schema.Types.ObjectId, ref: 'Admin' },
+  paymentClaimRejectionReason: { type: String, maxlength: 2000 },
   paidAt: { type: Date },
 
   // Application Status

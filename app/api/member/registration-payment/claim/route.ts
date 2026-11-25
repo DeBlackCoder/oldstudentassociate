@@ -15,6 +15,7 @@ export async function GET() {
       applicationRef: applicant.applicationRef,
       paymentStatus: applicant.paymentStatus,
       paymentClaimStatus: applicant.paymentClaimStatus || null,
+      paymentClaimRejectionReason: applicant.paymentClaimRejectionReason,
     }, { headers: { 'Cache-Control': 'private, no-store' } });
   } catch (error) {
     return routeError(error);
@@ -40,8 +41,16 @@ export async function POST() {
       paymentStatus: { $ne: 'paid' },
       paymentClaimStatus: { $ne: 'pending' },
     }, {
-      $set: { paymentClaimStatus: 'pending', paymentClaimedAt: claimedAt, status: 'Pending', submittedAt: claimedAt },
-      $unset: { paymentClaimConfirmedAt: '', paymentClaimConfirmedBy: '' },
+      $set: {
+        paymentClaimStatus: 'pending',
+        paymentClaimedAt: claimedAt,
+        status: 'Pending',
+        submittedAt: applicant.submittedAt || claimedAt,
+      },
+      $unset: {
+        paymentClaimConfirmedAt: '', paymentClaimConfirmedBy: '',
+        paymentClaimRejectedAt: '', paymentClaimRejectedBy: '', paymentClaimRejectionReason: '',
+      },
     }, { new: true, runValidators: true });
 
     if (!updated) {

@@ -4,7 +4,8 @@ import { visibleAccountFilter } from '@/lib/utils/account-visibility';
 export const submittedApplicationFilter = { ...visibleAccountFilter, paymentStatus: 'paid' as const, status: { $in: ['Pending', 'Approved', 'Rejected'] as IApplicant['status'][] } };
 export function applicationStatusForMember(applicant: Pick<IApplicant, 'status' | 'paymentStatus' | 'paymentClaimStatus'> | null) {
   if (!applicant) return null;
-  return applicant.status === 'Pending' && applicant.paymentStatus !== 'paid' && applicant.paymentClaimStatus !== 'pending' ? 'Saved' : applicant.status;
+  return applicant.status === 'Pending' && applicant.paymentStatus !== 'paid'
+    && applicant.paymentClaimStatus !== 'pending' && applicant.paymentClaimStatus !== 'rejected' ? 'Saved' : applicant.status;
 }
 export function submissionFieldsOnPayment(applicant: Pick<IApplicant, 'status' | 'submittedAt'>, now = new Date()) {
   if (applicant.status === 'Saved') return { status: 'Pending' as const, submittedAt: now };

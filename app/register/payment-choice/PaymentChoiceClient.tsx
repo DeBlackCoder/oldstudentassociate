@@ -8,7 +8,8 @@ import { ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
 interface PaymentChoice {
   applicationRef: string;
   paymentStatus: 'unpaid' | 'paid' | 'failed';
-  paymentClaimStatus: 'pending' | 'confirmed' | null;
+  paymentClaimStatus: 'pending' | 'confirmed' | 'rejected' | null;
+  paymentClaimRejectionReason?: string;
 }
 
 function PaymentChoiceContent() {
@@ -55,7 +56,7 @@ function PaymentChoiceContent() {
         router.replace('/members/dashboard?tab=application');
         return;
       }
-      setChoice(current => current ? { ...current, paymentClaimStatus: result.paymentClaimStatus } : current);
+      setChoice(current => current ? { ...current, paymentClaimStatus: result.paymentClaimStatus, paymentClaimRejectionReason: undefined } : current);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to report your payment.');
     } finally {
@@ -85,15 +86,22 @@ function PaymentChoiceContent() {
             <Link href="/members/dashboard?tab=registration-payment" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-amber-900 underline">Check status in your dashboard <ArrowRight className="h-4 w-4" /></Link>
           </div>
         ) : !loading && choice && choice.paymentStatus !== 'paid' ? (
-          <div className="mt-7 grid gap-3 sm:grid-cols-2">
-            <button type="button" disabled={submitting} onClick={reportPaidInPerson} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#1a472a] px-5 py-3 text-sm font-semibold text-white hover:bg-[#2d5f3f] disabled:opacity-60">
-              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              Yes, I already paid
-            </button>
-            <Link href={paymentUrl} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-neutral-300 px-5 py-3 text-sm font-semibold text-[#121417] hover:bg-neutral-50">
-              No, take me to payment <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+          <>
+            {choice.paymentClaimStatus === 'rejected' && <div role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-800">
+              <p className="font-semibold">Your in-person payment report was not confirmed.</p>
+              {choice.paymentClaimRejectionReason && <p className="mt-1">Reason: {choice.paymentClaimRejectionReason}</p>}
+              <p className="mt-1">You can continue to online payment or report the in-person payment again if you have new information.</p>
+            </div>}
+            <div className="mt-7 grid gap-3 sm:grid-cols-2">
+              <button type="button" disabled={submitting} onClick={reportPaidInPerson} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#1a472a] px-5 py-3 text-sm font-semibold text-white hover:bg-[#2d5f3f] disabled:opacity-60">
+                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                {choice.paymentClaimStatus === 'rejected' ? 'Report in-person payment again' : 'Yes, I already paid'}
+              </button>
+              <Link href={paymentUrl} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-neutral-300 px-5 py-3 text-sm font-semibold text-[#121417] hover:bg-neutral-50">
+                No, take me to payment <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </>
         ) : null}
         <Link href="/members/dashboard?tab=edit-form" className="mt-6 block text-center text-sm text-neutral-500 underline">Back to registration form</Link>
       </section>

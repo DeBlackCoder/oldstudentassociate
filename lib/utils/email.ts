@@ -258,6 +258,21 @@ export async function sendRejectionEmail(
   });
 }
 
+export async function sendPaymentClaimRejectedEmail(
+  email: string,
+  fullName: string,
+  applicationRef: string,
+  reason: string
+): Promise<void> {
+  const paymentUrl = `${APP_URL}/register/payment-choice?ref=${encodeURIComponent(applicationRef)}`;
+  await transporter.sendMail({
+    from: FROM,
+    to: email,
+    subject: 'Update on your registration payment report',
+    text: `Dear ${fullName},\n\nYour in-person registration payment report for application ${applicationRef} could not be confirmed.\n\nReason: ${reason}\n\nIf you still need to pay, continue to payment here: ${paymentUrl}\n\nIf you believe this is an error, contact oldstudentassociation94@gmail.com.`,
+  });
+}
+
 const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || 'oldstudentassociation94@gmail.com';
 
 // ── Admin notification: new registration ────────────────────────────

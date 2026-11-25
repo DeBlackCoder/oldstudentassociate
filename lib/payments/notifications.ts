@@ -21,3 +21,14 @@ export async function notifyMembershipPayment(applicant: IApplicant) {
     ]);
   } catch { console.error('Membership payment notification could not be delivered'); }
 }
+
+export async function notifyPaymentClaimRejected(applicant: IApplicant, reason: string) {
+  try {
+    const { sendPaymentClaimRejectedEmail } = await import('@/lib/utils/email');
+    await sendPaymentClaimRejectedEmail(applicant.email, applicant.fullName, applicant.applicationRef, reason);
+    return true;
+  } catch (error) {
+    console.error('In-person payment rejection notification failed:', error);
+    return false;
+  }
+}

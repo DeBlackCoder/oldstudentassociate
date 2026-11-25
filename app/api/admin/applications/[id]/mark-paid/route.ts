@@ -29,7 +29,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       paymentRef: paymentReference, paymentAmount: application.paymentExpectedAmount || registrationFeeKobo(), paidAt: now,
       ...(physicalPaymentClaim ? { paymentClaimStatus: 'confirmed', paymentClaimConfirmedAt: now, paymentClaimConfirmedBy: admin._id } : {}),
       ...(remarks ? { adminRemarks: remarks } : {}),
-    }, ...(physicalPaymentClaim ? {} : { $unset: { paymentClaimStatus: '', paymentClaimedAt: '', paymentClaimConfirmedAt: '', paymentClaimConfirmedBy: '' } }) }, { new: true, runValidators: true });
+    }, ...(physicalPaymentClaim ? {} : { $unset: {
+      paymentClaimStatus: '', paymentClaimedAt: '', paymentClaimConfirmedAt: '', paymentClaimConfirmedBy: '',
+      paymentClaimRejectedAt: '', paymentClaimRejectedBy: '', paymentClaimRejectionReason: '',
+    } }) }, { new: true, runValidators: true });
     if (!updated) throw new HttpError(409, 'This registration payment has already been confirmed');
     await logCommunityAction(admin, physicalPaymentClaim ? 'Confirmed in-person registration payment' : 'Confirmed registration bank transfer', id, `Reference ${updated.applicationRef}; NGN ${(updated.paymentAmount || 0) / 100}; saved form submitted automatically. ${remarks || ''}`);
     await notifyMembershipPayment(updated);

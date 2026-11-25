@@ -25,7 +25,7 @@ export async function GET() {
     let applicantData = null;
     if (member.applicantId) {
       applicantData = await Applicant.findById(member.applicantId)
-        .select('fullName status paymentStatus paymentClaimStatus membershipNumber applicationRef secondarySchool graduationYear submittedAt paidAt');
+        .select('fullName status paymentStatus paymentClaimStatus paymentClaimRejectionReason membershipNumber applicationRef secondarySchool graduationYear submittedAt paidAt');
     }
 
     return NextResponse.json({
@@ -44,6 +44,7 @@ export async function GET() {
         registrationPreApproved: isHiddenAccount(member.email) && member.registrationPreApproved === true,
         paymentStatus: applicantData?.paymentStatus || 'unpaid',
         paymentClaimStatus: applicantData?.paymentClaimStatus,
+        paymentClaimRejectionReason: applicantData?.paymentClaimRejectionReason,
         membershipNumber: applicantData?.membershipNumber,
         applicationRef: member.applicationRef || applicantData?.applicationRef,
         secondarySchool: applicantData?.secondarySchool,

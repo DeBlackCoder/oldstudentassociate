@@ -107,6 +107,7 @@ test('unpaid legacy Pending applications are presented as Saved while reviewed s
   assert.equal(applicationStatusForMember({ status: 'Pending', paymentStatus: 'unpaid' }), 'Saved');
   assert.equal(applicationStatusForMember({ status: 'Pending', paymentStatus: 'failed' }), 'Saved');
   assert.equal(applicationStatusForMember({ status: 'Pending', paymentStatus: 'unpaid', paymentClaimStatus: 'pending' }), 'Pending');
+  assert.equal(applicationStatusForMember({ status: 'Pending', paymentStatus: 'unpaid', paymentClaimStatus: 'rejected' }), 'Pending');
   assert.equal(applicationStatusForMember({ status: 'Saved', paymentStatus: 'unpaid' }), 'Saved');
   assert.equal(applicationStatusForMember({ status: 'Pending', paymentStatus: 'paid' }), 'Pending');
   assert.equal(applicationStatusForMember({ status: 'Approved', paymentStatus: 'paid' }), 'Approved');
@@ -244,6 +245,36 @@ test('a member report submits the application while keeping payment pending', as
   assert.equal(applicant.status, 'Pending');
   assert.equal(applicant.submittedAt?.getTime(), applicant.paymentClaimedAt?.getTime());
   assert.equal(applicant.paymentStatus, 'unpaid');
+});
+
+test('a member can resubmit a rejected in-person report without changing its original submission time', async t => {
+  const member = await mockMember(t);
+  const applicant = new Applicant({
+    ...completeForm,
+    memberId: member._id,
+    applicationRef: 'RSSS/2026/041',
+    status: 'Pending',
+    submittedAt: now,
+    paymentStatus: 'unpaid',
+    paymentClaimStatus: 'rejected',
+    paymentClaimRejectionReason: 'No matching payment was found.',
+  });
+  member.applicantId = applicant._id;
+  t.mock.method(Applicant, 'findById', () => selectedResult(applicant) as unknown as ReturnType<typeof Applicant.findById>);
+  let write: { filter: unknown; update: unknown } | undefined;
+  t.mock.method(Applicant, 'findOneAndUpdate', (filter: unknown, update: unknown) => {
+    write = { filter, update };
+    return Promise.resolve(applicant) as unknown as ReturnType<typeof Applicant.findOneAndUpdate>;
+  });
+  const { POST } = await import('../app/api/member/registration-payment/claim/route');
+
+  const response = await POST();
+  assert.equal(response.status, 200);
+  const update = write?.update as { $set: Record<string, unknown>; $unset: Record<string, string> };
+  assert.equal(update.$set.submittedAt, now);
+  assert.equal(update.$set.paymentClaimStatus, 'pending');
+  assert.equal(update.$unset.paymentClaimRejectionReason, '');
+  assert.equal(applicant.submittedAt, now);
 });
 
 test('concurrent first saves recover the unique-account conflict and reuse the winning form reference', async t => {
@@ -494,6 +525,47 @@ test('admin confirmation of an in-person payment preserves its submission time a
   assert.equal(update.$set.submittedAt, undefined);
   assert.equal(applicant.submittedAt, now);
   assert.equal(auditAction, 'Confirmed in-person registration payment');
+});
+
+test('an admin can reject a pending in-person payment report and the member is notified', async t => {
+  const admin = await mockAdmin(t, 'Admin');
+  const applicant = new Applicant({
+    ...completeForm,
+    applicationRef: 'RSSS/2026/042',
+    status: 'Pending',
+    submittedAt: now,
+    paymentStatus: 'unpaid',
+    paymentClaimStatus: 'pending',
+  });
+  let write: { filter: unknown; update: unknown } | undefined;
+  t.mock.method(Applicant, 'findOneAndUpdate', (filter: unknown, update: unknown) => {
+    write = { filter, update };
+    Object.assign(applicant, (update as { $set: Record<string, unknown> }).$set);
+    return Promise.resolve(applicant) as unknown as ReturnType<typeof Applicant.findOneAndUpdate>;
+  });
+  t.mock.method(AuditLog, 'create', () => Promise.resolve({}) as unknown as ReturnType<typeof AuditLog.create>);
+  suppressDelivery(t);
+  const { POST } = await import('../app/api/admin/applications/[id]/reject-payment-claim/route');
+  const request = new NextRequest(`http://localhost/api/admin/applications/${applicant._id}/reject-payment-claim`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ remarks: 'No matching payment was found.' }),
+  });
+
+  const response = await POST(request, { params: Promise.resolve({ id: applicant._id.toString() }) });
+  const result = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(result.success, true);
+  assert.equal(result.notificationSent, true);
+  assert.equal((write?.filter as { paymentClaimStatus: string }).paymentClaimStatus, 'pending');
+  assert.equal((write?.filter as { paymentStatus: { $ne: string } }).paymentStatus.$ne, 'paid');
+  const update = write?.update as { $set: Record<string, unknown> };
+  assert.equal(update.$set.paymentClaimStatus, 'rejected');
+  assert.equal(update.$set.paymentClaimRejectionReason, 'No matching payment was found.');
+  assert.equal(update.$set.paymentStatus, undefined);
+  assert.equal(applicant.status, 'Pending');
+  assert.equal(applicant.paymentStatus, 'unpaid');
+  assert.equal(admin.isActive, true);
 });
 
 test('a read-only verifier cannot manually confirm a registration payment', async t => {
