@@ -176,6 +176,8 @@ function MemberDashboardContent() {
     ? <span className="rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1">Approved</span>
     : isRejected
     ? <span className="rounded-full bg-red-100 text-red-700 text-xs font-semibold px-3 py-1">Rejected</span>
+    : profileComplete && member.paymentClaimStatus === 'pending'
+    ? <span className="rounded-full bg-amber-100 text-amber-800 text-xs font-semibold px-3 py-1">Submitted · payment verification pending</span>
     : profileComplete && !isPaid
     ? <span className="rounded-full bg-neutral-100 text-black text-xs font-semibold px-3 py-1">Saved · awaiting payment</span>
     : !profileComplete
@@ -210,7 +212,7 @@ function MemberDashboardContent() {
             <p className="text-xs font-semibold uppercase tracking-widest">One-time membership registration</p>
             <h1 className="mt-2 text-2xl font-bold">Registration payment</h1>
             <p className="mt-4 text-4xl font-bold">{registrationFee}</p>
-            <p className="mt-3 text-sm leading-6">{isPaid ? 'Your registration fee has been confirmed. Your saved form was submitted automatically for review.' : member.paymentClaimStatus === 'pending' ? 'You reported paying the registration fee in person. An administrator must confirm receipt before your application is submitted for review.' : profileComplete ? 'Your completed form is saved. It will be submitted automatically when your registration payment is confirmed.' : 'Complete and save your registration form before making this payment.'}</p>
+            <p className="mt-3 text-sm leading-6">{isPaid ? 'Your registration fee has been confirmed. Your application is available for admin review.' : member.paymentClaimStatus === 'pending' ? 'You reported paying the registration fee in person and your application has been submitted. An administrator must confirm receipt before it can be accepted.' : profileComplete ? 'Your completed form is saved. It will be submitted when your registration payment is confirmed or you report an in-person payment.' : 'Complete and save your registration form before making this payment.'}</p>
             {member.applicationRef && <p className="mt-3 break-all text-sm">Application reference: <strong>{member.applicationRef}</strong></p>}
             <div className="mt-6 flex flex-wrap gap-3">
               {member.paymentClaimStatus === 'pending'
@@ -366,7 +368,7 @@ function MemberDashboardContent() {
               <div className="divide-y divide-neutral-100">
                 {[
                   { label: 'Application Ref', value: member.applicationRef || '—' },
-                  { label: 'Status', value: !profileComplete ? 'Form incomplete' : !isPaid ? 'Saved · awaiting payment' : member.status },
+                  { label: 'Status', value: !profileComplete ? 'Form incomplete' : member.paymentClaimStatus === 'pending' ? 'Submitted · payment verification pending' : !isPaid ? 'Saved · awaiting payment' : member.status },
                   { label: 'Payment', value: isPaid ? 'Paid ✓' : 'Unpaid' },
                   ...(member.secondarySchool ? [{ label: 'School', value: member.secondarySchool }] : []),
                   ...(member.graduationYear ? [{ label: 'Graduation Year', value: String(member.graduationYear) }] : []),

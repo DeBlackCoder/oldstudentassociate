@@ -10,9 +10,14 @@ export async function POST(request: NextRequest) {
     const data = completeRegistrationSchema.parse(await readJson(request));
     const applicant = await saveRegistration(member, data);
     const status = applicationStatusForMember(applicant);
-    const submitted = applicant.paymentStatus === 'paid' && status !== 'Saved';
+    const submitted = status !== 'Saved';
+    const message = applicant.paymentClaimStatus === 'pending'
+      ? 'Form details updated. Your application remains submitted while payment verification is pending.'
+      : submitted
+        ? 'Form details updated. Your payment and review status are unchanged.'
+        : 'Form saved. It will submit when your membership registration payment is confirmed.';
     return NextResponse.json({ success: true, status, paymentStatus: applicant.paymentStatus, submitted,
-      message: submitted ? 'Form details updated. Your payment and review status are unchanged.' : 'Form saved. It will submit automatically when your membership registration payment is confirmed.',
+      message,
       applicationRef: applicant.applicationRef, applicantId: applicant._id,
     });
   } catch (error) { return routeError(error); }

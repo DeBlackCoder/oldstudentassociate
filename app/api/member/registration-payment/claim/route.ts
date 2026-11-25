@@ -40,7 +40,7 @@ export async function POST() {
       paymentStatus: { $ne: 'paid' },
       paymentClaimStatus: { $ne: 'pending' },
     }, {
-      $set: { paymentClaimStatus: 'pending', paymentClaimedAt: claimedAt },
+      $set: { paymentClaimStatus: 'pending', paymentClaimedAt: claimedAt, status: 'Pending', submittedAt: claimedAt },
       $unset: { paymentClaimConfirmedAt: '', paymentClaimConfirmedBy: '' },
     }, { new: true, runValidators: true });
 

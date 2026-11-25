@@ -49,7 +49,7 @@ async function mockMember(t: TestContext, verified = true) {
   t.mock.method(Member, 'findById', () => selectedResult(member) as unknown as ReturnType<typeof Member.findById>);
   return member;
 }
-async function mockAdmin(t: TestContext, role: 'Super Admin' | 'Verifier' = 'Super Admin') {
+async function mockAdmin(t: TestContext, role: 'Super Admin' | 'Admin' | 'Verifier' = 'Super Admin') {
   isolatedConnection();
   const admin = new Admin({ email: 'reviewer@example.org', password: 'unused-password', fullName: 'Reviewer', role, isActive: true });
   mockCookies(t, { 'admin-token': await createToken({ adminId: admin._id.toString(), email: admin.email, role: admin.role }) });
@@ -106,6 +106,7 @@ function mockStoredForm(t: TestContext, member: InstanceType<typeof Member>, exi
 test('unpaid legacy Pending applications are presented as Saved while reviewed states are preserved', () => {
   assert.equal(applicationStatusForMember({ status: 'Pending', paymentStatus: 'unpaid' }), 'Saved');
   assert.equal(applicationStatusForMember({ status: 'Pending', paymentStatus: 'failed' }), 'Saved');
+  assert.equal(applicationStatusForMember({ status: 'Pending', paymentStatus: 'unpaid', paymentClaimStatus: 'pending' }), 'Pending');
   assert.equal(applicationStatusForMember({ status: 'Saved', paymentStatus: 'unpaid' }), 'Saved');
   assert.equal(applicationStatusForMember({ status: 'Pending', paymentStatus: 'paid' }), 'Pending');
   assert.equal(applicationStatusForMember({ status: 'Approved', paymentStatus: 'paid' }), 'Approved');
@@ -130,6 +131,7 @@ test('payment cannot reset an approval, rejection or their submission dates', ()
     assert.equal('status' in fields, false);
     assert.equal('submittedAt' in fields, false);
   }
+  assert.deepEqual(submissionFieldsOnPayment({ status: 'Pending', submittedAt: now }, new Date('2026-10-08T12:00:00Z')), {});
 });
 
 test('complete registration saves require authentication and never allocate a reference for anonymous requests', async t => {
@@ -216,7 +218,7 @@ test('saving a complete form twice retains one Saved application and sends no su
   assert.equal(delivery.emails.length, 0); assert.equal(delivery.notifications.mock.callCount(), 0);
 });
 
-test('a member can report in-person payment without submitting an unpaid application', async t => {
+test('a member report submits the application while keeping payment pending', async t => {
   const member = await mockMember(t);
   const applicant = new Applicant({ ...completeForm, memberId: member._id, applicationRef: 'RSSS/2026/040', status: 'Saved', paymentStatus: 'unpaid' });
   member.applicantId = applicant._id;
@@ -239,9 +241,9 @@ test('a member can report in-person payment without submitting an unpaid applica
   assert.equal(response.status, 200);
   assert.equal(applicant.paymentClaimStatus, 'pending');
   assert.ok(applicant.paymentClaimedAt instanceof Date);
+  assert.equal(applicant.status, 'Pending');
+  assert.equal(applicant.submittedAt?.getTime(), applicant.paymentClaimedAt?.getTime());
   assert.equal(applicant.paymentStatus, 'unpaid');
-  assert.equal(applicant.status, 'Saved');
-  assert.equal(applicant.submittedAt, undefined);
 });
 
 test('concurrent first saves recover the unique-account conflict and reuse the winning form reference', async t => {
@@ -447,12 +449,13 @@ test('manual bank confirmation submits a saved form once and records one audit e
   assert.equal(applicant.submittedAt.toISOString(), submittedAt);
 });
 
-test('admin confirmation of an in-person payment records the claim and submits the form', async t => {
-  const admin = await mockAdmin(t);
+test('admin confirmation of an in-person payment preserves its submission time and unlocks review', async t => {
+  const admin = await mockAdmin(t, 'Admin');
   const applicant = new Applicant({
     ...completeForm,
     applicationRef: 'RSSS/2026/002',
-    status: 'Saved',
+    status: 'Pending',
+    submittedAt: now,
     paymentStatus: 'unpaid',
     paymentExpectedAmount: 200000,
     paymentClaimStatus: 'pending',
@@ -487,8 +490,9 @@ test('admin confirmation of an in-person payment records the claim and submits t
   assert.equal(update.$set.paymentMethod, 'admin');
   assert.equal(update.$set.paymentClaimStatus, 'confirmed');
   assert.equal(update.$set.paymentClaimConfirmedBy, admin._id);
-  assert.equal(update.$set.status, 'Pending');
-  assert.ok(update.$set.submittedAt instanceof Date);
+  assert.equal(update.$set.status, undefined);
+  assert.equal(update.$set.submittedAt, undefined);
+  assert.equal(applicant.submittedAt, now);
   assert.equal(auditAction, 'Confirmed in-person registration payment');
 });
 
@@ -511,4 +515,33 @@ test('legacy unpaid Pending applications cannot be rejected before payment', asy
   const request = new NextRequest(`http://localhost/api/admin/applications/${applicant._id}/reject`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ remarks: 'Review must wait for payment' }) });
   assert.ok([400, 409].includes((await POST(request, { params: Promise.resolve({ id: applicant._id.toString() }) })).status));
   assert.equal(save.mock.callCount(), 0); assert.equal(applicant.status, 'Pending');
+});
+
+test('a submitted in-person claim cannot be accepted until an admin confirms payment', async t => {
+  await mockAdmin(t);
+  const applicant = new Applicant({
+    ...completeForm,
+    applicationRef: 'RSSS/2026/003',
+    status: 'Pending',
+    submittedAt: now,
+    paymentStatus: 'unpaid',
+    paymentClaimStatus: 'pending',
+  });
+  t.mock.method(Applicant, 'findById', () => selectedResult(applicant) as unknown as ReturnType<typeof Applicant.findById>);
+  const count = t.mock.method(Applicant, 'countDocuments', () => { throw new Error('Unpaid claims cannot be approved'); });
+  const save = t.mock.method(applicant, 'save', () => { throw new Error('Unpaid claims cannot be approved'); });
+  const { POST } = await import('../app/api/admin/applications/[id]/approve/route');
+  const request = new NextRequest(`http://localhost/api/admin/applications/${applicant._id}/approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ remarks: 'Application reviewed' }),
+  });
+
+  const response = await POST(request, { params: Promise.resolve({ id: applicant._id.toString() }) });
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /payment has not been completed/i);
+  assert.equal(count.mock.callCount(), 0);
+  assert.equal(save.mock.callCount(), 0);
+  assert.equal(applicant.status, 'Pending');
+  assert.equal(applicant.paymentStatus, 'unpaid');
 });

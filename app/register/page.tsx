@@ -240,7 +240,7 @@ export function RegistrationForm({ embedded = false, onSaved }: { embedded?: boo
             {profileSaved ? 'Edit Your Registration Form' : 'Membership Registration'}
           </h1>
           <p className="text-lg text-gray-600">
-            {profileSaved ? 'Review your saved details and save any changes.' : 'Save your form first. It is submitted automatically when your registration payment is confirmed.'}
+            {profileSaved ? 'Review your saved details and save any changes.' : 'Save your form first, then submit it by paying online or reporting a prior in-person payment.'}
           </p>
           <p className="mt-3 text-sm text-neutral-700">Account email: <strong>{accountEmail}</strong>. Your registration uses this email.</p>
           {!embedded && <Link href="/members/dashboard?tab=edit-form" className="mt-3 inline-block text-sm font-semibold text-[#1a472a] underline">Return to dashboard</Link>}

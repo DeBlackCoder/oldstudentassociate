@@ -73,7 +73,7 @@ function PaymentChoiceContent() {
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#1a472a]">Registration payment</p>
         <h1 className="mt-3 text-2xl font-bold text-[#121417]">Have you already paid the ₦2,000 registration fee?</h1>
         <p className="mt-3 text-sm leading-6 text-neutral-600">
-          If you paid an administrator in person, report it and an administrator will verify receipt before your application is submitted for review. Otherwise, continue to the payment options.
+          If you paid an administrator in person, report it to submit your application. An administrator must verify receipt before it can be accepted. Otherwise, continue to the payment options.
         </p>
         {loading && <p role="status" className="mt-6 flex items-center gap-2 text-sm text-neutral-500"><Loader2 className="h-4 w-4 animate-spin" />Checking your saved application…</p>}
         {error && <p role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</p>}
@@ -81,7 +81,7 @@ function PaymentChoiceContent() {
         {!loading && choice?.paymentClaimStatus === 'pending' ? (
           <div role="status" className="mt-7 rounded-2xl border border-amber-200 bg-amber-50 p-5">
             <p className="flex items-center gap-2 font-semibold text-amber-900"><CheckCircle2 className="h-5 w-5" />Payment report sent</p>
-            <p className="mt-2 text-sm leading-6 text-amber-800">Your form is saved. An administrator must confirm your in-person payment before your application can be submitted for review.</p>
+            <p className="mt-2 text-sm leading-6 text-amber-800">Your application has been submitted. An administrator must verify your in-person payment before it becomes eligible for acceptance review.</p>
             <Link href="/members/dashboard?tab=registration-payment" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-amber-900 underline">Check status in your dashboard <ArrowRight className="h-4 w-4" /></Link>
           </div>
         ) : !loading && choice && choice.paymentStatus !== 'paid' ? (

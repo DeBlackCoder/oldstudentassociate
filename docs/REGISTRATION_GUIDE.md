@@ -4,8 +4,8 @@
 
 1. Sign in or create your member account with a Google account whose email is verified. See [Google sign-in setup](./GOOGLE_SIGNIN.md).
 2. Complete the membership form and save it. This stores a complete application under your account with one application reference.
-3. On the next page, choose **Yes** if you already paid the registration fee directly to an administrator. The payment report appears in **Admin Panel → Payments → Registration fees**. An Admin or Super Admin must verify receipt before the application is submitted for review. Choose **No** to continue to Paystack or bank-transfer payment.
-4. Paystack confirms successful payments automatically. A bank transfer remains unconfirmed until an authorised administrator verifies receipt. Confirmed payments automatically submit the saved form for review; no second form submission is needed.
+3. On the next page, choose **Yes** if you already paid the registration fee directly to an administrator. This submits your application and sends a payment report to **Admin Panel → Payments → Registration fee review**. An Admin or Super Admin must verify receipt before the application can be accepted. Choose **No** to continue to Paystack or bank-transfer payment.
+4. Paystack confirms successful payments automatically. A bank transfer remains unconfirmed until an authorised administrator verifies receipt. Confirmed Paystack or bank payments submit the saved form automatically. An in-person report submits it immediately, but payment must still be confirmed before the application can be accepted.
 5. The administrator reviews the paid application. Membership approval and the membership card remain subject to that review.
 
 After the first complete save, the **Complete Your Profile** prompt disappears. The dashboard provides separate **Edit form** and **Registration payment** tabs. Edit form reopens the saved fields so the member can change them and save again. Registration payment shows the registration payment's current status and available payment controls. Quarterly dues and the shared payment directory remain available in **Quarterly payments**.
@@ -19,8 +19,8 @@ When signed-in members or administrators return to the homepage, the membership 
 | State | Meaning | Available for formal admin review? |
 | --- | --- | --- |
 | Saved, unpaid | A complete form is stored, awaiting confirmed registration payment. | No |
-| In-person payment reported | The member says they already paid an administrator; awaiting administrator confirmation. | No |
-| Pending, paid | Payment was confirmed and the form was automatically submitted. | Yes |
+| Pending, payment verification | The application is submitted; an administrator must confirm the in-person payment before it can be accepted. | No |
+| Pending, paid | Payment was confirmed and the submitted application is available for acceptance review. | Yes |
 | Approved, paid | The administrator approved the submitted application. | Already reviewed |
 | Rejected, paid | The administrator rejected the submitted application. | Already reviewed |
 
@@ -28,13 +28,13 @@ The registration payment is separate from the ₦2,000 quarterly association due
 
 Older applications that were marked Pending before payment are withheld from the formal review list until their registration payment is confirmed. Their existing details and application references are preserved. Administrators may inspect saved/unpaid records for bank-transfer verification, but cannot approve or reject them before payment.
 
-Administrators open **Admin Panel → Payments → Registration fees** (`/admin/dashboard/payments`) to find saved forms awaiting their registration fee. Verify a bank transfer against the bank statement, or verify an in-person payment directly with the administrator who received it, then use the confirmation action. The application appears in Applications for formal review after payment confirmation. Verifier accounts can inspect this payment list but cannot confirm payments.
+Admins and Super Admins open **Admin Panel → Payments → Registration fee review** (`/admin/dashboard/payments`) to verify bank transfers and in-person payment reports. An in-person report submits the application immediately, but the application remains unavailable for acceptance until payment is confirmed. After confirmation, open the linked application or **Applications** to accept or reject it. Verifier accounts can inspect this payment list but cannot confirm payments.
 
 ## Payment confirmation
 
 Paystack confirmation checks successful transaction status, expected amount, NGN currency, payment reference and payer email. A successful browser callback or signed webhook confirms payment and submits the saved form in one database update. Browser checkout and verification require the member's verified account and are limited to that member's linked application. The signed webhook also confirms payment if the member closes the browser. Repeated confirmation requests do not create additional applications or resubmit an already-reviewed application.
 
-Bank-transfer and in-person payment verification are restricted to administrators authorised to edit applications. Confirmations are recorded with their method, reference, amount, date and audit trail, and submit the saved form automatically. Repeating the confirmation cannot produce a second registration payment.
+Bank-transfer and in-person payment verification are restricted to administrators authorised to edit applications. Confirmations are recorded with their method, reference, amount, date and audit trail. Bank-transfer confirmation submits the saved form; in-person confirmation makes the already-submitted application available for acceptance review. Repeating the confirmation cannot produce a second registration payment.
 
 Application confirmation messages and new-registration notifications are triggered after the first confirmed registration payment, rather than when an unpaid form is saved.
 
