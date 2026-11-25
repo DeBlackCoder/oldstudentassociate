@@ -7,6 +7,7 @@ import Member from '@/lib/models/Member';
 import AuditLog from '@/lib/models/AuditLog';
 import { updateAdminSchema } from '@/lib/validations/admin';
 import { isHiddenAccount } from '@/lib/utils/account-visibility';
+import { isBootstrapSuperAdminEmail } from '@/lib/utils/bootstrap-admin';
 import { ensureAdminMember } from '@/lib/utils/admin-member';
 
 type Context = { params: Promise<{ id: string }> };
@@ -24,8 +25,11 @@ export async function PATCH(request: NextRequest, { params }: Context) {
     if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     const data = parsed.data;
     if (!Object.keys(data).length) return NextResponse.json({ error: 'Choose a change to make' }, { status: 400 });
-    if (id === session.adminId && (data.isActive === false || (data.role && data.role !== 'Super Admin'))) return NextResponse.json({ error: 'Cannot remove your own administrator access' }, { status: 400 });
     const email = data.email?.trim().toLowerCase();
+    if (isBootstrapSuperAdminEmail(admin.email) && (data.isActive === false || (data.role && data.role !== 'Super Admin') || (email && email !== admin.email))) {
+      return NextResponse.json({ error: 'The bootstrap Super Admin account cannot be demoted, deactivated, or renamed' }, { status: 400 });
+    }
+    if (id === session.adminId && (data.isActive === false || (data.role && data.role !== 'Super Admin'))) return NextResponse.json({ error: 'Cannot remove your own administrator access' }, { status: 400 });
     if (email && isHiddenAccount(email)) return NextResponse.json({ error: 'Admin not found' }, { status: 404 });
     if (email && email !== admin.email) {
       const [otherAdmin, otherMember] = await Promise.all([Admin.exists({ email, _id: { $ne: admin._id } }), Member.exists({ email, adminId: { $ne: admin._id } })]);
@@ -59,6 +63,7 @@ export async function DELETE(_request: NextRequest, { params }: Context) {
     await connectDB();
     const admin = await Admin.findById(id);
     if (!admin || admin.isDeleted || isHiddenAccount(admin.email)) return NextResponse.json({ error: 'Admin not found' }, { status: 404 });
+    if (isBootstrapSuperAdminEmail(admin.email)) return NextResponse.json({ error: 'The bootstrap Super Admin account cannot be removed' }, { status: 400 });
     if (id === session.adminId) return NextResponse.json({ error: 'Cannot remove your own administrator access' }, { status: 400 });
     await Admin.updateOne({ _id: admin._id }, { $set: { isActive: false } });
     await Member.updateOne({ adminId: admin._id }, { $unset: { adminId: '' } });

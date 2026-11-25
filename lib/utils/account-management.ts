@@ -8,6 +8,7 @@ import PasswordReset from '@/lib/models/PasswordReset';
 import EventRegistration from '@/lib/models/EventRegistration';
 import ScholarshipApplication from '@/lib/models/ScholarshipApplication';
 import { ensureAdminMember } from './admin-member';
+import { isBootstrapSuperAdminEmail } from './bootstrap-admin';
 import { hashPassword } from './auth';
 import { isHiddenAccount } from './account-visibility';
 
@@ -52,6 +53,7 @@ export async function deleteMemberAccount(memberId: string, confirmationEmail: s
   assertManageableAccount(member, actor);
   if (confirmationEmail.trim().toLowerCase() !== member.email.toLowerCase()) throw new AccountManagementError('Type the account email address to confirm deletion', 400);
   const admin = member.adminId ? await Admin.findById(member.adminId) : await Admin.findOne({ email: member.email });
+  if (isBootstrapSuperAdminEmail(member.email) || isBootstrapSuperAdminEmail(admin?.email)) throw new AccountManagementError('The bootstrap Super Admin account cannot be deleted', 400);
   if (admin && (isHiddenAccount(admin.email) || admin._id.toString() === actor.adminId)) throw new AccountManagementError('Account not found', 404);
   const now = new Date(), originalEmail = member.email;
   const removedEmail = `deleted-${memberId}@accounts.invalid`;

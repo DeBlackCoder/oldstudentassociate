@@ -68,6 +68,31 @@ test('the private account is protected from deletion and promotion even for othe
   assert.equal(write.mock.callCount(), 0);
 });
 
+test('the bootstrap Super Admin cannot be deleted or lose its administrator role', async t => {
+  const email = 'hillaryprosperwahua@gmail.com';
+  const member = new Member({ email, password: 'private-hash' });
+  const staff = new Admin({ email, password: 'private-hash', fullName: 'Bootstrap Owner', role: 'Super Admin', isActive: true });
+  t.mock.method(Member, 'findById', () => query(member) as unknown as ReturnType<typeof Member.findById>);
+  t.mock.method(Admin, 'findOne', () => Promise.resolve(staff) as unknown as ReturnType<typeof Admin.findOne>);
+  const memberWrite = t.mock.method(Member, 'updateOne', () => { throw new Error('Bootstrap account must not be deleted'); });
+  await assert.rejects(deleteMemberAccount(member._id.toString(), email, actor), { status: 400 });
+  assert.equal(memberWrite.mock.callCount(), 0);
+
+  isolateDatabase();
+  const current = new Admin({ email: actor.email, fullName: 'Test Owner', password: 'hash', role: 'Super Admin', isActive: true });
+  const token = await createToken({ adminId: current._id.toString(), email: current.email, role: current.role });
+  const headers = createRequire(resolve('package.json'))('next/headers') as typeof import('next/headers');
+  t.mock.method(headers, 'cookies', () => Promise.resolve({ get: (name: string) => name === 'admin-token' ? { value: token } : undefined }) as unknown as ReturnType<typeof headers.cookies>);
+  t.mock.method(Admin, 'findById', (id: unknown) => query(String(id) === current._id.toString() ? current : staff) as unknown as ReturnType<typeof Admin.findById>);
+  const update = t.mock.method(Admin, 'findByIdAndUpdate', () => { throw new Error('Bootstrap role must not change'); });
+  const { PATCH, DELETE } = await import('../app/api/admin/admins/[id]/route');
+  const patch = await PATCH(request(`/api/admin/admins/${staff._id}`, 'PATCH', { role: 'Admin' }), context(staff._id.toString()));
+  const deletion = await DELETE(request(`/api/admin/admins/${staff._id}`, 'DELETE'), context(staff._id.toString()));
+  assert.equal(patch.status, 400);
+  assert.equal(deletion.status, 400);
+  assert.equal(update.mock.callCount(), 0);
+});
+
 test('promoting a member preserves their original password, draft, form, and registration payment link', async t => {
   const member = new Member({ email: 'member@example.org', password: 'member-original-password-hash', fullName: 'Existing Member', emailVerified: true, profileComplete: true, applicantId: new mongoose.Types.ObjectId(), formDraft: { skills: ['Teaching'] } });
   const profile = { applicantId: member.applicantId, formDraft: member.formDraft, password: member.password };

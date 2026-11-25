@@ -146,6 +146,45 @@ test('shared Google sign-in grants an active administrator both sessions identit
   assert.equal(saveAdmin.mock.callCount(), 1);
 });
 
+test('the bootstrap Google account is provisioned as Super Admin without an application', async t => {
+  isolatedConnection();
+  const { resolveGoogleSignInAccount } = await import('../lib/utils/google-auth');
+  const email = 'hillaryprosperwahua@gmail.com';
+  let member: InstanceType<typeof Member> | undefined;
+  t.mock.method(Admin, 'findOne', () => Promise.resolve(null) as unknown as ReturnType<typeof Admin.findOne>);
+  t.mock.method(Admin, 'findOneAndUpdate', (_filter: unknown, update: unknown) => {
+    const values = update as { $set: Record<string, unknown>; $setOnInsert: Record<string, unknown> };
+    const admin = new Admin({ ...values.$setOnInsert, ...values.$set, email });
+    return Promise.resolve(admin) as unknown as ReturnType<typeof Admin.findOneAndUpdate>;
+  });
+  t.mock.method(Member, 'findOne', () => Promise.resolve(null) as unknown as ReturnType<typeof Member.findOne>);
+  t.mock.method(Member, 'create', (document: Record<string, unknown>) => {
+    member = new Member(document);
+    return Promise.resolve(member) as unknown as ReturnType<typeof Member.create>;
+  });
+  t.mock.method(Member, 'findOneAndUpdate', (_filter: unknown, update: unknown) => {
+    const values = update as { $set: Record<string, unknown> };
+    Object.assign(member!, values.$set);
+    return Promise.resolve(member) as unknown as ReturnType<typeof Member.findOneAndUpdate>;
+  });
+
+  const account = await resolveGoogleSignInAccount({
+    googleId: 'google-bootstrap-super-admin',
+    email: email.toUpperCase(),
+    name: 'Hillary Prosper Wahua',
+  });
+
+  assert.equal(account?.admin?.email, email);
+  assert.equal(account?.admin?.role, 'Super Admin');
+  assert.equal(account?.admin?.isActive, true);
+  assert.equal(account?.member, member);
+  assert.equal(member?.adminId?.toString(), account?.admin?._id.toString());
+  assert.equal(member?.emailVerified, true);
+  assert.equal(member?.profileComplete, false);
+  assert.equal(member?.applicantId, undefined);
+  assert.equal(member?.applicationRef, undefined);
+});
+
 test('shared Google sign-in rejects inactive administrator accounts', async t => {
   isolatedConnection();
   const { resolveGoogleSignInAccount } = await import('../lib/utils/google-auth');
