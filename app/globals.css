@@ -452,6 +452,6 @@
   [class*="text-indigo-"],
   [class*="text-[#1a472a]"],
   [class*="text-[#121417]"]
-) {
+):not(tbody *) {
   color: #fff;
 }
