@@ -382,11 +382,6 @@
 }
 
 @scope ([data-dashboard="admin"] :is(.bg-white, .dashboard-light-surface)) {
-  :scope,
-  :scope * {
-    color: #fff;
-  }
-
   :scope {
     background-color: #1a1f2a;
     border-color: rgba(255, 255, 255, 0.1);
