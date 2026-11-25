@@ -47,8 +47,9 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
   const [adminName, setAdminName] = useState('Administrator');
   const [adminEmail, setAdminEmail] = useState('');
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [canViewUsers, setCanViewUsers] = useState(false);
   const [canViewActivity, setCanViewActivity] = useState(false);
-  const availableNavItems = navItems.filter(item => (item.href !== '/admin/dashboard/users' || isSuperAdmin) && (item.href !== '/admin/dashboard/activity' || canViewActivity));
+  const availableNavItems = navItems.filter(item => (item.href !== '/admin/dashboard/users' || isSuperAdmin || canViewUsers) && (item.href !== '/admin/dashboard/activity' || canViewActivity));
 
   // Close profile dropdown on outside click
   useEffect(() => {
@@ -69,6 +70,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         setAdminName(data.admin?.fullName || 'Administrator');
         setAdminEmail(data.admin?.email || '');
         setIsSuperAdmin(data.admin?.role === 'Super Admin');
+        setCanViewUsers(data.admin?.role === 'Admin');
         setCanViewActivity(data.admin?.canViewActivity === true);
       })
       .catch(() => router.push('/login'));

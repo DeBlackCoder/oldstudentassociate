@@ -49,8 +49,8 @@ test('account management endpoints require authentication', async t => {
   assert.equal((await promotion.POST(request('/api/admin/accounts/x/role', 'POST'), context('x'))).status, 401);
 });
 
-for (const role of ['Admin', 'Verifier'] as const) test(`${role} cannot list accounts, promote members, or delete users`, async t => {
-  await mockSession(t, role);
+test('Verifier cannot list accounts, promote members, or delete users', async t => {
+  await mockSession(t, 'Verifier');
   const directory = await import('../app/api/admin/accounts/route');
   const deletion = await import('../app/api/admin/accounts/[id]/route');
   const promotion = await import('../app/api/admin/accounts/[id]/role/route');
@@ -180,7 +180,42 @@ test('Super Admin users directory includes incomplete and unverified accounts wi
   const { GET } = await import('../app/api/admin/accounts/route');
   const response = await GET(request('/api/admin/accounts?search=unfinished&page=1'));
   assert.equal(response.status, 200); const body = await response.json();
-  assert.equal(body.accounts.length, 1); assert.equal(body.accounts[0].emailVerified, false); assert.equal(body.accounts[0].applicationStatus, 'No form'); assert.equal('password' in body.accounts[0], false); assert.deepEqual(filter.email, visibleAccountFilter.email); assert.equal('status' in filter, false);
+  assert.equal(body.accounts.length, 1); assert.equal(body.accounts[0].emailVerified, false); assert.equal(body.accounts[0].applicationStatus, 'No form'); assert.equal('password' in body.accounts[0], false); assert.equal(body.canManageAccounts, true); assert.deepEqual(filter.email, visibleAccountFilter.email); assert.equal('status' in filter, false);
+});
+
+test('Admin can view regular accounts but not Super Admin accounts or manage users', async t => {
+  await mockSession(t, 'Admin');
+  const superAdmin = new Admin({ email: 'super@example.org', fullName: 'Super Admin', password: 'secret-hash', role: 'Super Admin', isActive: true }).toObject();
+  const member = new Member({ email: 'member@example.org', fullName: 'Visible Member', password: 'secret-hash' }).toObject();
+  const adminFilters: Record<string, unknown>[] = [];
+  let memberFilter: Record<string, unknown> = {};
+  let countFilter: Record<string, unknown> = {};
+  t.mock.method(Admin, 'find', (value: unknown) => {
+    const filter = value as Record<string, unknown>;
+    adminFilters.push(filter);
+    return query(filter.role === 'Super Admin' ? [superAdmin] : []) as unknown as ReturnType<typeof Admin.find>;
+  });
+  t.mock.method(Member, 'find', (value: unknown) => { memberFilter = value as Record<string, unknown>; return query([member]) as unknown as ReturnType<typeof Member.find>; });
+  t.mock.method(Member, 'countDocuments', (value: unknown) => { countFilter = value as Record<string, unknown>; return Promise.resolve(1) as unknown as ReturnType<typeof Member.countDocuments>; });
+  t.mock.method(Applicant, 'find', () => query([]) as unknown as ReturnType<typeof Applicant.find>);
+
+  const { GET } = await import('../app/api/admin/accounts/route');
+  const response = await GET(request('/api/admin/accounts'));
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.canManageAccounts, false);
+  assert.deepEqual(body.accounts.map((account: { email: string }) => account.email), [member.email]);
+  assert.deepEqual(memberFilter.$nor, [
+    { adminId: { $in: [superAdmin._id] } },
+    { email: { $in: [superAdmin.email] } },
+  ]);
+  assert.deepEqual(countFilter, memberFilter);
+  assert.deepEqual(adminFilters[1].role, { $ne: 'Super Admin' });
+
+  const deletion = await import('../app/api/admin/accounts/[id]/route');
+  const promotion = await import('../app/api/admin/accounts/[id]/role/route');
+  assert.equal((await deletion.DELETE(request('/api/admin/accounts/x', 'DELETE'), context('x'))).status, 403);
+  assert.equal((await promotion.POST(request('/api/admin/accounts/x/role', 'POST', { role: 'Admin' }), context('x'))).status, 403);
 });
 
 test('private administrator direct edits and revocation return not found without writes', async t => {

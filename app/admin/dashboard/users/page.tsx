@@ -17,6 +17,7 @@ export default function UserAccountsPage() {
   const [error, setError] = useState(''), [success, setSuccess] = useState('');
   const [searchText, setSearchText] = useState(''), [search, setSearch] = useState('');
   const [page, setPage] = useState(1), [pages, setPages] = useState(1), [total, setTotal] = useState(0);
+  const [canManageAccounts, setCanManageAccounts] = useState(false);
   const [action, setAction] = useState<Action | null>(null);
   const [role, setRole] = useState<'Admin' | 'Verifier'>('Admin'), [confirmationEmail, setConfirmationEmail] = useState('');
 
@@ -26,7 +27,7 @@ export default function UserAccountsPage() {
       const response = await fetch(`/api/admin/accounts?page=${page}&search=${encodeURIComponent(search)}`, { cache: 'no-store' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Unable to load accounts');
-      setAccounts(data.accounts); setPages(data.pages); setTotal(data.total);
+      setAccounts(data.accounts); setPages(data.pages); setTotal(data.total); setCanManageAccounts(data.canManageAccounts === true);
     } catch (failure) { setError(failure instanceof Error ? failure.message : 'Unable to load accounts'); }
     finally { setLoading(false); }
   }, [page, search]);
@@ -53,7 +54,7 @@ export default function UserAccountsPage() {
 
   return <div className="max-w-6xl">
     <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-      <div><h1 className="text-2xl font-bold text-white">User accounts</h1><p className="mt-1 text-sm text-white/60">Manage member accounts, registration progress, and administrator access.</p></div>
+      <div><h1 className="text-2xl font-bold text-white">User accounts</h1><p className="mt-1 text-sm text-white/60">{canManageAccounts ? 'Manage member accounts, registration progress, and administrator access.' : 'View member accounts, registration progress, and administrator access.'}</p></div>
       <Link href="/admin/dashboard/admins" className="rounded-xl bg-[#1a472a] px-4 py-2 text-sm font-semibold text-white">Manage admins</Link>
     </div>
     {error && <p role="alert" className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{error}</p>}
@@ -67,16 +68,16 @@ export default function UserAccountsPage() {
     </div>
     <div className="overflow-x-auto rounded-2xl bg-white">
       {loading ? <div className="flex justify-center p-16 text-black"><Loader2 className="h-6 w-6 animate-spin" /></div> : !accounts.length ? <p className="p-12 text-center text-sm text-black">No matching accounts.</p> : <table className="w-full min-w-[760px] text-left text-sm text-black">
-        <thead className="border-b border-black/10"><tr>{['Member', 'Registration', 'Account access', 'Joined', 'Actions'].map(label => <th key={label} className="px-4 py-3 text-xs font-semibold uppercase tracking-wide">{label}</th>)}</tr></thead>
+        <thead className="border-b border-black/10"><tr>{['Member', 'Registration', 'Account access', 'Joined', ...(canManageAccounts ? ['Actions'] : [])].map(label => <th key={label} className="px-4 py-3 text-xs font-semibold uppercase tracking-wide">{label}</th>)}</tr></thead>
         <tbody>{accounts.map(account => <tr key={account.id} className="border-b border-black/10 last:border-0">
           <td className="px-4 py-4"><p className="font-semibold">{account.fullName}</p><p className="mt-1 break-all text-xs">{account.email}</p>{account.membershipNumber && <p className="mt-1 text-xs">{account.membershipNumber}</p>}</td>
           <td className="px-4 py-4"><p>{account.applicationStatus}</p><p className="mt-1 text-xs">Registration fee: {account.registrationPaymentStatus === 'paid' ? 'Confirmed' : 'Not paid'}</p><p className="mt-1 text-xs">Email {account.emailVerified ? 'verified' : 'unverified'} · Form {account.profileComplete ? 'saved' : 'incomplete'}</p></td>
           <td className="px-4 py-4">{account.admin ? `${account.admin.role}${account.admin.isActive ? '' : ' · inactive'}` : 'Member'}</td>
           <td className="px-4 py-4 text-xs">{new Date(account.createdAt).toLocaleDateString('en-GB')}</td>
-          <td className="px-4 py-4"><div className="flex flex-wrap gap-2">
+          {canManageAccounts && <td className="px-4 py-4"><div className="flex flex-wrap gap-2">
             {account.canDelete && account.admin?.role !== 'Super Admin' && <button onClick={() => openAction('promote', account)} className="flex items-center gap-1 rounded-lg border border-black/20 px-2 py-1.5 text-xs font-semibold"><ShieldPlus className="h-3.5 w-3.5" />{account.admin ? 'Edit access' : 'Make admin'}</button>}
             {account.canDelete && <button onClick={() => openAction('delete', account)} className="flex items-center gap-1 rounded-lg border border-black/20 px-2 py-1.5 text-xs font-semibold"><Trash2 className="h-3.5 w-3.5" />Delete account</button>}
-          </div></td>
+          </div></td>}
         </tr>)}</tbody>
       </table>}
     </div>
