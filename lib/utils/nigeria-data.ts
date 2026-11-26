@@ -26,6 +26,7 @@ export const employmentTypes = [
 export const contributionAreas = [
   'Relationship / Networking',
   'Welfare',
+  'Mentorship',
   'Education / Scholarship',
   'Publicity / Media',
   'Sports',
@@ -56,6 +57,7 @@ export const commonSkills = [
 ];
 
 export const schoolPositions = [
+  'Not applicable',
   'Prefect',
   'Senior Prefect',
   'Class Representative',

@@ -26,17 +26,20 @@ export async function generateApplicationRef(): Promise<string> {
 
 /**
  * Generate unique membership number.
- * Format: RSSSOSAA/YYYY/XXXXX
+ * Format: RSSSOSA/YYYY/NNNN
  */
 export function generateMembershipNumber(year: number, sequence: number): string {
-  const paddedSequence = String(sequence).padStart(5, '0');
-  return `RSSSOSAA/${year}/${paddedSequence}`;
+  if (!Number.isInteger(sequence) || sequence < 1 || sequence > 9999) {
+    throw new RangeError('Membership sequence must be between 1 and 9999');
+  }
+  const paddedSequence = String(sequence).padStart(4, '0');
+  return `RSSSOSA/${year}/${paddedSequence}`;
 }
 
 /**
- * Parse and validate membership number.
+ * Parse and validate current and previously issued membership numbers.
  */
 export function validateMembershipNumber(membershipNumber: string): boolean {
-  const regex = /^RSSSOSAA\/\d{4}\/\d{5}$/;
+  const regex = /^(?:RSSSOSA\/\d{4}\/\d{4}|RSSSOSAA\/\d{4}\/\d{5})$/;
   return regex.test(membershipNumber);
 }

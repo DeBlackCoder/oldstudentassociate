@@ -10,6 +10,7 @@ import Applicant from '../lib/models/Applicant';
 import AuditLog from '../lib/models/AuditLog';
 import { ensureAdminMember } from '../lib/utils/admin-member';
 import { adminMatchesMember } from '../lib/utils/admin-member-policy';
+import { generateMembershipNumber, validateMembershipNumber } from '../lib/utils/reference-generator';
 import { createMemberToken, getMemberSession, verifyMemberToken } from '../lib/utils/member-auth';
 import { createToken, verifyToken } from '../lib/utils/auth';
 
@@ -109,6 +110,14 @@ test('malformed and unknown-role admin tokens are rejected', async () => {
   const unknown = await createToken({ adminId: admin._id.toString(), email: admin.email, role: 'member' });
   assert.equal(await verifyToken(unknown), null);
 });
+test('membership numbers use four digits and previously issued numbers remain valid', () => {
+  assert.equal(generateMembershipNumber(2026, 1), 'RSSSOSA/2026/0001');
+  assert.equal(generateMembershipNumber(2026, 9999), 'RSSSOSA/2026/9999');
+  assert.throws(() => generateMembershipNumber(2026, 10000), RangeError);
+  assert.equal(validateMembershipNumber('RSSSOSA/2026/0001'), true);
+  assert.equal(validateMembershipNumber('RSSSOSAA/2025/00001'), true);
+  assert.equal(validateMembershipNumber('RSSSOSA/2026/001'), false);
+});
 
 test('administrator password login is disabled in favor of shared Google sign-in', async () => {
   const { POST } = await import('../app/api/admin/login/route');
@@ -206,7 +215,8 @@ test('a Google-authenticated member can receive membership approval', async t =>
   member.applicantId = applicant._id;
   member.applicationRef = applicant.applicationRef;
   t.mock.method(Applicant, 'findById', () => selectedResult(applicant) as unknown as ReturnType<typeof Applicant.findById>);
-  t.mock.method(Applicant, 'countDocuments', () => Promise.resolve(0) as unknown as ReturnType<typeof Applicant.countDocuments>);
+  let membershipFilter: Record<string, unknown> = {};
+  t.mock.method(Applicant, 'countDocuments', (filter: unknown) => { membershipFilter = filter as Record<string, unknown>; return Promise.resolve(0) as unknown as ReturnType<typeof Applicant.countDocuments>; });
   t.mock.method(applicant, 'save', () => Promise.resolve(applicant));
   t.mock.method(AuditLog, 'create', () => Promise.resolve({}) as unknown as ReturnType<typeof AuditLog.create>);
 
@@ -216,7 +226,8 @@ test('a Google-authenticated member can receive membership approval', async t =>
   const approvalBody = await approval.json();
   assert.equal(approval.status, 200);
   assert.equal(applicant.status, 'Approved');
-  assert.match(approvalBody.membershipNumber, /^RSSSOSAA\/\d{4}\/\d{5}$/);
+  assert.match(approvalBody.membershipNumber, /^RSSSOSA\/\d{4}\/\d{4}$/);
+  assert.deepEqual(membershipFilter, { status: 'Approved', membershipNumber: { $regex: `^RSSSOSA/${new Date().getFullYear()}/` } });
 
   const memberToken = cookies.get('member-token')!;
   cookies.delete('admin-token');

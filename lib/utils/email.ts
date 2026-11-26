@@ -273,6 +273,19 @@ export async function sendPaymentClaimRejectedEmail(
   });
 }
 
+export async function sendPaymentClaimConfirmedEmail(
+  email: string,
+  fullName: string,
+  applicationRef: string
+): Promise<void> {
+  await transporter.sendMail({
+    from: FROM,
+    to: email,
+    subject: `Registration payment verified — ${applicationRef}`,
+    text: `Dear ${fullName},\n\nYour in-person registration payment for application ${applicationRef} has been verified by an administrator. Your application is now available for acceptance review.\n\nThis confirms your payment only; your membership application is not yet approved. We will notify you when the application review is complete.`,
+  });
+}
+
 const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || 'oldstudentassociation94@gmail.com';
 
 // ── Admin notification: new registration ────────────────────────────

@@ -116,6 +116,12 @@ function MemberDashboardContent() {
       .finally(() => setLoading(false));
   }, [router, refreshVersion]);
 
+  useEffect(() => {
+    const refreshMemberOnFocus = () => setRefreshVersion(value => value + 1);
+    window.addEventListener('focus', refreshMemberOnFocus);
+    return () => window.removeEventListener('focus', refreshMemberOnFocus);
+  }, []);
+
   const needsRegistrationForm = member !== null && !member.profileComplete;
   useEffect(() => {
     if (needsRegistrationForm && !hasTabParam) {
@@ -149,8 +155,9 @@ function MemberDashboardContent() {
 
   if (!member) return null;
 
-  const isPaid = member.paymentStatus === 'paid';
-  const isApproved = member.status === 'Approved';
+  const isPaymentClaimPending = member.paymentClaimStatus === 'pending';
+  const isPaid = member.paymentStatus === 'paid' && !isPaymentClaimPending;
+  const isApproved = member.status === 'Approved' && !isPaymentClaimPending;
   const isRejected = member.status === 'Rejected';
   const profileComplete = member.profileComplete;
   const registrationFee = formatNaira(member.registrationFeeKobo || 200_000, true);
@@ -173,12 +180,12 @@ function MemberDashboardContent() {
   ];
 
   /* ── Status badge ─────────────────────────────────────────────── */
-  const statusBadge = isApproved
+  const statusBadge = profileComplete && isPaymentClaimPending
+    ? <span className="rounded-full bg-amber-100 text-amber-800 text-xs font-semibold px-3 py-1">Submitted · payment verification pending</span>
+    : isApproved
     ? <span className="rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold px-3 py-1">Approved</span>
     : isRejected
     ? <span className="rounded-full bg-red-100 text-red-700 text-xs font-semibold px-3 py-1">Rejected</span>
-    : profileComplete && member.paymentClaimStatus === 'pending'
-    ? <span className="rounded-full bg-amber-100 text-amber-800 text-xs font-semibold px-3 py-1">Submitted · payment verification pending</span>
     : profileComplete && member.paymentClaimStatus === 'rejected'
     ? <span className="rounded-full bg-red-100 text-red-700 text-xs font-semibold px-3 py-1">Payment report rejected · action needed</span>
     : profileComplete && !isPaid
@@ -291,7 +298,27 @@ function MemberDashboardContent() {
           )}
 
           {/* State B: Profile done, not paid */}
-          {profileComplete && !isPaid && !isApproved && (
+          {profileComplete && isPaymentClaimPending && !isApproved && !isRejected && (
+            <div className="rounded-3xl bg-amber-500 px-6 py-6 text-white flex items-center gap-4">
+              <Clock className="h-7 w-7 flex-shrink-0" />
+              <div>
+                <p className="font-bold">Payment Verification Pending</p>
+                <p className="text-sm text-white/80">Your in-person payment report and application have been submitted. Your payment will be marked verified after an administrator confirms receipt. We&apos;ll email you after the review.</p>
+              </div>
+            </div>
+          )}
+
+          {profileComplete && member.paymentClaimStatus === 'rejected' && !isApproved && !isRejected && (
+            <div className="rounded-3xl bg-red-600 px-6 py-6 text-white flex items-center gap-4">
+              <XCircle className="h-7 w-7 flex-shrink-0" />
+              <div>
+                <p className="font-bold">Payment Report Not Confirmed</p>
+                <p className="text-sm text-white/80">Your in-person payment was declined. Review the reason in Registration payment, then pay online or submit another report if you have new information.</p>
+              </div>
+            </div>
+          )}
+
+          {profileComplete && !isPaid && !isApproved && !isRejected && !isPaymentClaimPending && member.paymentClaimStatus !== 'rejected' && (
             <div className="rounded-3xl bg-amber-500 px-6 py-6 text-white">
               <div className="flex items-center gap-3 mb-4">
                 <CreditCard className="h-6 w-6 flex-shrink-0" />
@@ -373,7 +400,7 @@ function MemberDashboardContent() {
                 {[
                   { label: 'Application Ref', value: member.applicationRef || '—' },
                   { label: 'Status', value: !profileComplete ? 'Form incomplete' : member.paymentClaimStatus === 'pending' ? 'Submitted · payment verification pending' : member.paymentClaimStatus === 'rejected' ? 'Payment report rejected · action needed' : !isPaid ? 'Saved · awaiting payment' : member.status },
-                  { label: 'Payment', value: isPaid ? 'Paid ✓' : 'Unpaid' },
+                  { label: 'Payment', value: isPaymentClaimPending ? 'Payment verification pending' : member.paymentClaimStatus === 'rejected' ? 'Payment report declined' : isPaid ? 'Verified ✓' : 'Unpaid' },
                   ...(member.secondarySchool ? [{ label: 'School', value: member.secondarySchool }] : []),
                   ...(member.graduationYear ? [{ label: 'Graduation Year', value: String(member.graduationYear) }] : []),
                   ...(member.submittedAt ? [{ label: 'Submitted', value: new Date(member.submittedAt).toLocaleDateString('en-GB') }] : []),

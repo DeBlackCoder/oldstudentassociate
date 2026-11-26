@@ -47,7 +47,7 @@ export async function POST(
     const currentYear = new Date().getFullYear();
     const approvedCount = await Applicant.countDocuments({
       status: 'Approved',
-      membershipNumber: { $regex: `^RSSSOSAA/${currentYear}/` }
+      membershipNumber: { $regex: `^RSSSOSA/${currentYear}/` }
     });
 
     const membershipNumber = generateMembershipNumber(currentYear, approvedCount + 1);

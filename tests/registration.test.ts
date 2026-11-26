@@ -514,7 +514,9 @@ test('admin confirmation of an in-person payment preserves its submission time a
   const response = await POST(request, { params: Promise.resolve({ id: applicant._id.toString() }) });
 
   assert.equal(response.status, 200);
-  assert.equal((await response.json()).success, true);
+  const result = await response.json();
+  assert.equal(result.success, true);
+  assert.equal(result.notificationSent, true);
   assert.equal((write?.filter as { paymentClaimStatus: string }).paymentClaimStatus, 'pending');
   const update = write?.update as { $set: Record<string, unknown> };
   assert.equal(update.$set.paymentStatus, 'paid');

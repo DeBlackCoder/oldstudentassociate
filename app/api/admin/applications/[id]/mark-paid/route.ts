@@ -35,9 +35,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     } }) }, { new: true, runValidators: true });
     if (!updated) throw new HttpError(409, 'This registration payment has already been confirmed');
     await logCommunityAction(admin, physicalPaymentClaim ? 'Confirmed in-person registration payment' : 'Confirmed registration bank transfer', id, `Reference ${updated.applicationRef}; NGN ${(updated.paymentAmount || 0) / 100}; saved form submitted automatically. ${remarks || ''}`);
-    await notifyMembershipPayment(updated);
-    return NextResponse.json({ success: true, message: physicalPaymentClaim
+    const notificationSent = await notifyMembershipPayment(updated);
+    const paymentMessage = physicalPaymentClaim
       ? 'In-person payment confirmed. The saved form has been submitted automatically for review.'
-      : 'Registration payment confirmed. The saved form has been submitted automatically for review.' });
+      : 'Registration payment confirmed. The saved form has been submitted automatically for review.';
+    return NextResponse.json({
+      success: true,
+      message: notificationSent
+        ? `${paymentMessage} The member has been notified by email.`
+        : `${paymentMessage} The member email could not be sent; please contact them directly.`,
+      notificationSent,
+    });
   } catch (error) { return routeError(error); }
 }

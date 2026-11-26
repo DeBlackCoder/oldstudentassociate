@@ -155,6 +155,7 @@ export default function ApplicationDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [remarks, setRemarks] = useState('');
   const [actionError, setActionError] = useState('');
+  const [actionNotice, setActionNotice] = useState('');
 
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -234,6 +235,7 @@ export default function ApplicationDetailPage() {
   async function handleMarkPaid() {
     setActionLoading(true);
     setActionError('');
+    setActionNotice('');
     try {
       const res = await fetch(`/api/admin/applications/${params?.id}/mark-paid`, {
         method: 'POST',
@@ -242,6 +244,7 @@ export default function ApplicationDetailPage() {
       });
       const data = await res.json();
       if (data.success) {
+        if (data.notificationSent === false) setActionNotice(data.message || 'Payment was confirmed, but the member email could not be sent. Please contact them directly.');
         setShowMarkPaidModal(false);
         fetchApplication();
       } else {
@@ -295,6 +298,9 @@ export default function ApplicationDetailPage() {
 
       {actionError && (
         <div className="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{actionError}</div>
+      )}
+      {actionNotice && (
+        <div role="status" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{actionNotice}</div>
       )}
 
       {/* Ref card */}

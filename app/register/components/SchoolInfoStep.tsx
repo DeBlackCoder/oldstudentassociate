@@ -104,7 +104,7 @@ export default function SchoolInfoStep({ data, updateData, onNext, onBack, retur
           onValueChange={(val) => updateData({ positionHeldInSchool: val ?? '' })}
         >
           <SelectTrigger id="positionHeldInSchool" className="h-11 w-full">
-            <SelectValue placeholder="None / Not Applicable" />
+            <SelectValue placeholder="Select a position or Not applicable" />
           </SelectTrigger>
           <SelectContent>
             {schoolPositions.map(pos => (

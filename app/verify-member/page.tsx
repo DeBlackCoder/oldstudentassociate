@@ -58,13 +58,13 @@ export default function VerifyMemberPage() {
             <FormField 
               label="Membership Number" 
               name="membershipNumber"
-              helpText="Format: RSSSOSAA/YYYY/XXXXX"
+              helpText="New format: RSSSOSA/YYYY/NNNN. Previously issued numbers remain valid."
             >
               <Input
                 id="membershipNumber"
                 value={membershipNumber}
                 onChange={(e) => setMembershipNumber(e.target.value.toUpperCase())}
-                placeholder="RSSSOSAA/2026/00001"
+                placeholder="RSSSOSA/2026/0001"
                 className="text-center text-lg font-mono"
               />
             </FormField>

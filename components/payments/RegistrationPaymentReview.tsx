@@ -48,15 +48,17 @@ export default function RegistrationPaymentReview() {
   async function confirmPayment() {
     if (!selected || !canReview || !checked || !confirm) return;
     setBusy(true); setError('');
+    setNotificationWarning(false);
     try {
       const response = await fetch(`/api/admin/applications/${selected._id}/mark-paid`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ remarks: remarks.trim() }) });
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.error || 'Unable to confirm this registration payment');
-      setMessage(selected.paymentClaimStatus === 'pending'
+      setMessage(result.message || (selected.paymentClaimStatus === 'pending'
         ? `In-person payment confirmed for ${selected.fullName}. Their submitted application is now available for acceptance review.`
-        : `Registration bank transfer confirmed for ${selected.fullName}. Their application is now available for acceptance review.`);
+        : `Registration bank transfer confirmed for ${selected.fullName}. Their application is now available for acceptance review.`));
+      setNotificationWarning(result.notificationSent === false);
       setApplicationReviewHref(`/admin/dashboard/applications/${selected._id}`);
-      setSelected(null); setConfirm(false); setRejectConfirm(false); setChecked(false); setNotificationWarning(false); await load();
+      setSelected(null); setConfirm(false); setRejectConfirm(false); setChecked(false); await load();
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to confirm this registration payment'); }
     finally { setBusy(false); }
   }
