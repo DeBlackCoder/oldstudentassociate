@@ -9,6 +9,7 @@ import {
   LayoutDashboard, FileText, Users, School,
   BarChart3, LogOut, Menu, X, Building2, CreditCard,
   ChevronLeft, ChevronRight, Bell, Search, UserCog, MessageSquare, CalendarDays,
+  Hash,
 } from 'lucide-react';
 
 const navItems = [
@@ -27,6 +28,7 @@ const navItems = [
   { href: '/admin/dashboard/messages', label: 'Messages', icon: MessageSquare },
   { href: '/admin/dashboard/admins', label: 'Admin Users', icon: UserCog },
   { href: '/admin/dashboard/users', label: 'All user accounts', icon: Users },
+  { href: '/admin/dashboard/membership-numbers', label: 'Membership numbers', icon: Hash },
   { href: '/admin/dashboard/activity', label: 'Portal activity', icon: Bell },
 ];
 
@@ -49,7 +51,11 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [canViewUsers, setCanViewUsers] = useState(false);
   const [canViewActivity, setCanViewActivity] = useState(false);
-  const availableNavItems = navItems.filter(item => (item.href !== '/admin/dashboard/users' || isSuperAdmin || canViewUsers) && (item.href !== '/admin/dashboard/activity' || canViewActivity));
+  const availableNavItems = navItems.filter(item =>
+    (item.href !== '/admin/dashboard/users' || isSuperAdmin || canViewUsers) &&
+    (item.href !== '/admin/dashboard/membership-numbers' || isSuperAdmin) &&
+    (item.href !== '/admin/dashboard/activity' || canViewActivity)
+  );
 
   // Close profile dropdown on outside click
   useEffect(() => {
