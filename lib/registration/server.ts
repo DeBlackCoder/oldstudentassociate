@@ -18,6 +18,11 @@ export function formView(applicant: IApplicant, accountEmail: string): Record<st
 }
 export async function saveRegistration(member: HydratedDocument<IMember>, data: CompleteRegistrationData) {
   if (data.email.toLowerCase() !== member.email.toLowerCase()) throw new HttpError(400, 'Use the email linked to your signed-in account');
+  if (member.applicantId && !member.profileComplete) {
+    await Member.updateOne({ _id: member._id }, { $unset: { applicantId: '', applicationRef: '' } });
+    member.applicantId = undefined;
+    member.applicationRef = undefined;
+  }
   const fields = {
     ...Object.fromEntries(FORM_FIELDS.map(key => [key, data[key]])),
     email: member.email, memberId: member._id, dateOfBirth: new Date(data.dateOfBirth), signatureDate: new Date(data.signatureDate),

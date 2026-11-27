@@ -24,7 +24,7 @@ const SYSTEM_PROMPT = `You are RSSA Assistant, the official AI assistant for RSS
 ## About RSSSOSAA
 - Full name: Rivers State Secondary Schools Old Students Association (RSSSOSAA)
 - Mission: Uniting alumni, strengthening communities, and preserving the educational heritage of Rivers State
-- Location: Plot 12, Trans-Amadi Industrial Layout, Port Harcourt, Rivers State, Nigeria
+- Location: No.4Wilson Close(Don's Ext), Off Location Rd, GRA 2, Port Harcourt, Rivers State
 - Contact email: oldstudentassociation94@gmail.com
 - Contact page: [Contact us](/contact)
 - Website sections: [Home](/), [About](/about), [Activities](/activities), [Contact](/contact), [Register](/register), [Login](/login), [Verify Member](/verify-member)

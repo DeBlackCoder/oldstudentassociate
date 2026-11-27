@@ -135,8 +135,13 @@ function SuccessContent() {
           <p>For inquiries about your application, contact us at:</p>
           <p className="mt-1">
             <a href="mailto:oldstudentassociation94@gmail.com" className="text-[#1a472a] hover:underline">oldstudentassociation94@gmail.com</a>
-            {' | '}
-            <a href="tel:+2348000000000" className="text-[#1a472a] hover:underline">+234 800 000 0000</a>
+          </p>
+          <p className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1">
+            <a href="tel:+2348059867929" className="text-[#1a472a] hover:underline">Aaron: 08059867929</a>
+            <a href="tel:+2348032276847" className="text-[#1a472a] hover:underline">Jeff: 08032276847</a>
+            <a href="tel:+2348102894440" className="text-[#1a472a] hover:underline">Nneka: 08102894440</a>
+            <a href="tel:+2348127878463" className="text-[#1a472a] hover:underline">Faith: 08127878463</a>
+            <a href="tel:+2348032757438" className="text-[#1a472a] hover:underline">Patience: 08032757438</a>
           </p>
         </div>
       </div>

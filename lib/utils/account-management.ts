@@ -61,15 +61,12 @@ export async function deleteMemberAccount(memberId: string, confirmationEmail: s
   // Revoke access first. The rest is idempotent cleanup of retained records.
   await Member.updateOne({ _id: member._id, isDeleted: { $ne: true } }, {
     $set: { isDeleted: true, email: removedEmail, fullName: 'Deleted member', password: lockedPassword, passwordChangedAt: now, emailVerified: false, profileComplete: false },
-    $unset: { emailVerificationCode: '', emailVerificationExpiry: '', formDraft: '' },
+    $unset: { emailVerificationCode: '', emailVerificationExpiry: '', formDraft: '', applicantId: '', applicationRef: '' },
   });
   if (admin) await Admin.updateOne({ _id: admin._id }, { $set: { isDeleted: true, isActive: false, email: `deleted-admin-${admin._id}@accounts.invalid`, fullName: 'Deleted administrator', password: lockedPassword, passwordChangedAt: now } });
   await PasswordReset.deleteMany({ $or: [{ memberId: member._id }, ...(admin ? [{ adminId: admin._id }] : []), { accountKey: originalEmail }] });
-  if (member.applicantId) await Applicant.updateOne({ _id: member.applicantId }, {
-    $set: { email: removedEmail, fullName: 'Deleted member', dateOfBirth: new Date('1970-01-01'), phoneNumber: 'Deleted', whatsappNumber: 'Deleted', residentialAddress: 'Deleted', stateOfOrigin: 'Deleted', lga: 'Deleted', secondarySchool: 'Deleted', currentOccupation: 'Deleted', skills: [], contributionAreas: [], signature: 'Deleted' },
-    $unset: { positionHeldInSchool: '', organizationName: '', otherContributionArea: '', referredBy: '', adminRemarks: '' },
-  });
+  await Applicant.deleteMany({ $or: [{ memberId: member._id }, ...(member.applicantId ? [{ _id: member.applicantId }] : [])] });
   await EventRegistration.updateMany({ memberId: member._id }, { $set: { fullName: 'Deleted member', email: removedEmail } });
-  await ScholarshipApplication.updateMany({ memberId: member._id }, { $set: { fullName: 'Deleted member', email: removedEmail, phoneNumber: 'Deleted', institution: 'Deleted', courseOfStudy: 'Deleted', academicLevel: 'Deleted', academicResult: 'Deleted', statement: 'Deleted', documents: [], internalNotes: '', feedback: '' } });
-  await AuditLog.create({ adminId: new mongoose.Types.ObjectId(actor.adminId), adminName: actor.email, action: 'DELETE_USER_ACCOUNT', targetType: 'Member', targetId: memberId, details: 'Deleted user access and anonymized the profile; payment amounts and transaction references retained for accounting.', timestamp: now });
+  await ScholarshipApplication.deleteMany({ memberId: member._id });
+  await AuditLog.create({ adminId: new mongoose.Types.ObjectId(actor.adminId), adminName: actor.email, action: 'DELETE_USER_ACCOUNT', targetType: 'Member', targetId: memberId, details: 'Deleted user access, stored applications, drafts, and personal profile data; payment references retained for accounting.', timestamp: now });
 }

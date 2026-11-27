@@ -145,19 +145,19 @@ test('deletion invalidates access and personal data while retaining transaction 
   t.mock.method(Member, 'findById', () => Promise.resolve(member) as unknown as ReturnType<typeof Member.findById>);
   t.mock.method(Admin, 'findById', () => Promise.resolve(staff) as unknown as ReturnType<typeof Admin.findById>);
   let removedMember: { $set: Record<string, unknown>; $unset: Record<string, unknown> } | undefined;
-  let redactedApplicant: { $set: Record<string, unknown>; $unset: Record<string, unknown> } | undefined;
   t.mock.method(Member, 'updateOne', (_filter: unknown, update: unknown) => { removedMember = update as typeof removedMember; return Promise.resolve({}) as unknown as ReturnType<typeof Member.updateOne>; });
   const removedAdmin = t.mock.method(Admin, 'updateOne', () => Promise.resolve({}) as unknown as ReturnType<typeof Admin.updateOne>);
   const reset = t.mock.method(PasswordReset, 'deleteMany', () => Promise.resolve({}) as unknown as ReturnType<typeof PasswordReset.deleteMany>);
-  t.mock.method(Applicant, 'updateOne', (_filter: unknown, update: unknown) => { redactedApplicant = update as typeof redactedApplicant; return Promise.resolve({}) as unknown as ReturnType<typeof Applicant.updateOne>; });
+  const removedApplications = t.mock.method(Applicant, 'deleteMany', () => Promise.resolve({}) as unknown as ReturnType<typeof Applicant.deleteMany>);
   const events = t.mock.method(EventRegistration, 'updateMany', () => Promise.resolve({}) as unknown as ReturnType<typeof EventRegistration.updateMany>);
-  t.mock.method(ScholarshipApplication, 'updateMany', () => Promise.resolve({}) as unknown as ReturnType<typeof ScholarshipApplication.updateMany>);
+  const removedScholarships = t.mock.method(ScholarshipApplication, 'deleteMany', () => Promise.resolve({}) as unknown as ReturnType<typeof ScholarshipApplication.deleteMany>);
   const financialDelete = t.mock.method(DuesPayment, 'deleteMany', () => { throw new Error('Do not delete payment evidence'); });
   const audit = t.mock.method(AuditLog, 'create', () => Promise.resolve({}) as unknown as ReturnType<typeof AuditLog.create>);
   await deleteMemberAccount(member._id.toString(), member.email, actor);
   assert.equal(removedMember!.$set.isDeleted, true); assert.equal(removedMember!.$set.emailVerified, false); assert.equal(removedMember!.$set.fullName, 'Deleted member'); assert.match(String(removedMember!.$set.email), /^deleted-/); assert.ok(removedMember!.$set.passwordChangedAt instanceof Date);
-  for (const field of ['paymentAmount', 'paymentStatus', 'paymentRef', 'membershipNumber', 'paidAt']) assert.equal(field in redactedApplicant!.$set || field in redactedApplicant!.$unset, false, field);
-  assert.equal(redactedApplicant!.$set.fullName, 'Deleted member'); assert.equal(financialDelete.mock.callCount(), 0); assert.equal(events.mock.callCount(), 1); assert.equal(removedAdmin.mock.callCount(), 1); assert.equal(reset.mock.callCount(), 1); assert.equal(audit.mock.callCount(), 1);
+  for (const field of ['applicantId', 'applicationRef', 'formDraft']) assert.equal(field in removedMember!.$unset, true, field);
+  assert.equal(removedApplications.mock.callCount(), 1); assert.equal(removedScholarships.mock.callCount(), 1);
+  assert.equal(financialDelete.mock.callCount(), 0); assert.equal(events.mock.callCount(), 1); assert.equal(removedAdmin.mock.callCount(), 1); assert.equal(reset.mock.callCount(), 1); assert.equal(audit.mock.callCount(), 1);
 });
 
 for (const role of ['Super Admin', 'Admin'] as const) test(`${role} administrator directory never includes the private account`, async t => {

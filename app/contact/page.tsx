@@ -12,12 +12,16 @@ const sans = Figtree({ subsets: ['latin'], variable: '--font-sans' });
 const contactItems = [
   {
     label: 'Visit us',
-    value: 'Plot 12, Trans-Amadi Industrial Layout, Port Harcourt, Rivers State',
+    value: "No.4Wilson Close(Don's Ext), Off Location Rd, GRA 2, Port Harcourt, Rivers State",
     icon: MapPin,
     href: undefined as string | undefined,
   },
   { label: 'Email us', value: 'oldstudentassociation94@gmail.com', icon: Mail, href: 'mailto:oldstudentassociation94@gmail.com' },
-  { label: 'Call us', value: '+234 800 000 0000', icon: Phone, href: 'tel:+2348000000000' },
+  { label: 'Call Aaron', value: '08059867929', icon: Phone, href: 'tel:+2348059867929' },
+  { label: 'Call Jeff', value: '08032276847', icon: Phone, href: 'tel:+2348032276847' },
+  { label: 'Call Nneka', value: '08102894440', icon: Phone, href: 'tel:+2348102894440' },
+  { label: 'Call Faith', value: '08127878463', icon: Phone, href: 'tel:+2348127878463' },
+  { label: 'Call Patience', value: '08032757438', icon: Phone, href: 'tel:+2348032757438' },
 ];
 
 // Index 0 = Sunday, matching Date.getDay()

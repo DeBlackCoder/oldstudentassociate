@@ -145,9 +145,15 @@ export function RegistrationForm({ embedded = false, onSaved }: { embedded?: boo
           if (cancelled) return;
           const email = dbData.email || dbData.draft?.email || '';
           const storageKey = `${STORAGE_KEY}:${email.toLowerCase()}`;
-          const local = loadDraft(storageKey, email);
+          let local = loadDraft(storageKey, email);
           const saved = dbData.profileComplete === true;
           const draft = dbData.draft as (Partial<RegistrationData> & { step?: number }) | null;
+          const hasServerDraft = !!draft && Object.keys(draft).some(key => key !== 'email');
+          if (!saved && !hasServerDraft && !dbData.applicationRef) {
+            clearRegistrationDraft(storageKey);
+            clearRegistrationDraft(STORAGE_KEY);
+            local = { step: 1, data: EMPTY_FORM };
+          }
           setIsLoggedIn(true);
           setAccountEmail(email);
           setDraftStorageKey(storageKey);
