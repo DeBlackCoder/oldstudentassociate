@@ -116,6 +116,13 @@ function MemberDashboardContent() {
       .finally(() => setLoading(false));
   }, [router, refreshVersion]);
 
+  // Save last-used email so the login page can hint it after sign-out.
+  useEffect(() => {
+    if (member?.email) {
+      try { localStorage.setItem('rsssosaa_last_email', member.email); } catch { /* ignore */ }
+    }
+  }, [member?.email]);
+
   useEffect(() => {
     const refreshMemberOnFocus = () => setRefreshVersion(value => value + 1);
     window.addEventListener('focus', refreshMemberOnFocus);
@@ -142,7 +149,7 @@ function MemberDashboardContent() {
 
   async function handleLogout() {
     await fetch('/api/member/logout', { method: 'POST' });
-    router.push('/');
+    router.push('/login');
   }
 
   if (loading) {
