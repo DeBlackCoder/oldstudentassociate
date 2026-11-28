@@ -249,7 +249,7 @@ function PaymentContent() {
             <div className="rounded-2xl bg-neutral-50 border border-neutral-100 px-6 py-8 text-center">
               <Building2 className="h-8 w-8 text-neutral-300 mx-auto mb-3" />
               <p className="text-sm font-semibold text-neutral-600">Bank details not available</p>
-              <p className="text-xs text-neutral-400 mt-1">Please use the online payment option or contact us at <a href="mailto:oldstudentassociation94@gmail.com" className="text-[#1a472a] hover:underline">oldstudentassociation94@gmail.com</a></p>
+              <p className="text-xs text-neutral-400 mt-1">Please use the online payment option or contact us at <a href="mailto:oldstudentsassociation94@gmail.com" className="text-[#1a472a] hover:underline">oldstudentsassociation94@gmail.com</a></p>
             </div>
           )}
         </div>

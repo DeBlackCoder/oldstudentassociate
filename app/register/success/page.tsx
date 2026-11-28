@@ -134,7 +134,7 @@ function SuccessContent() {
         <div className="mt-6 text-center text-sm text-gray-600">
           <p>For inquiries about your application, contact us at:</p>
           <p className="mt-1">
-            <a href="mailto:oldstudentassociation94@gmail.com" className="text-[#1a472a] hover:underline">oldstudentassociation94@gmail.com</a>
+            <a href="mailto:oldstudentsassociation94@gmail.com" className="text-[#1a472a] hover:underline">oldstudentsassociation94@gmail.com</a>
           </p>
           <p className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1">
             <a href="tel:+2348059867929" className="text-[#1a472a] hover:underline">Aaron: 08059867929</a>

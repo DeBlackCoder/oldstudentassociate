@@ -327,8 +327,8 @@ export function RegistrationForm({ embedded = false, onSaved }: { embedded?: boo
         <div className="mt-8 text-center text-sm text-gray-600">
           <p>
             Need assistance? Contact us at{' '}
-            <a href="mailto:oldstudentassociation94@gmail.com" className="text-[#1a472a] underline">
-              oldstudentassociation94@gmail.com
+            <a href="mailto:oldstudentsassociation94@gmail.com" className="text-[#1a472a] underline">
+              oldstudentsassociation94@gmail.com
             </a>
           </p>
         </div>

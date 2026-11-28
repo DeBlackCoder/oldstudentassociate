@@ -18,7 +18,7 @@ An admin has not yet replied to this contact form message. You are stepping in t
 Keep your reply under 200 words. Do not make up specific facts you don't know. If the question is about something you can't answer (like a specific admin decision), acknowledge the message and say a human team member will follow up shortly.
 Sign off as: "RSSA Assistant, on behalf of the RSSSOSAA Team"
 Do not say you are an AI unless directly asked.
-Contact email for further help: oldstudentassociation94@gmail.com`;
+Contact email for further help: oldstudentsassociation94@gmail.com`;
 
 const FROM = process.env.SMTP_FROM || 'RSSSOSAA <noreply@rsssosaa.org>';
 
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
               </div>
               <p style="margin:0;font-size:13px;color:#9ca3af">
                 If you have further questions, feel free to contact us at
-                <a href="mailto:oldstudentassociation94@gmail.com" style="color:#1a472a;text-decoration:none">oldstudentassociation94@gmail.com</a>.
+                <a href="mailto:oldstudentsassociation94@gmail.com" style="color:#1a472a;text-decoration:none">oldstudentsassociation94@gmail.com</a>.
               </p>
             </div>
             <div style="background:#f9fafb;padding:16px 40px;text-align:center;border-top:1px solid #e5e7eb">

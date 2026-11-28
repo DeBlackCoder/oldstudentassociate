@@ -16,7 +16,7 @@ const contactItems = [
     icon: MapPin,
     href: undefined as string | undefined,
   },
-  { label: 'Email us', value: 'oldstudentassociation94@gmail.com', icon: Mail, href: 'mailto:oldstudentassociation94@gmail.com' },
+  { label: 'Email us', value: 'oldstudentsassociation94@gmail.com', icon: Mail, href: 'mailto:oldstudentsassociation94@gmail.com' },
   { label: 'Call Aaron', value: '08059867929', icon: Phone, href: 'tel:+2348059867929' },
   { label: 'Call Jeff', value: '08032276847', icon: Phone, href: 'tel:+2348032276847' },
   { label: 'Call Nneka', value: '08102894440', icon: Phone, href: 'tel:+2348102894440' },

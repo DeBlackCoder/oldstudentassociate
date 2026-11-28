@@ -137,7 +137,7 @@ export default function MembershipNumbersPage() {
               Membership number
               <input value={membershipNumber} onChange={event => setMembershipNumber(event.target.value)} required autoComplete="off" className="mt-2 w-full rounded-xl border border-black/20 px-3 py-2 font-mono uppercase" />
             </label>
-            <p className="mt-2 text-xs text-black/60">Use RSSSOSA/YYYY/NNNN or RSSSOSAA/YYYY/NNNNN.</p>
+            <p className="mt-2 text-xs text-black/60">Use RSSSOSA/YYYY/NNNN or RSSSOSAA/YYYY/NNNNN for legacy numbers.</p>
             {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
             <div className="mt-6 flex justify-end gap-2">
               <button type="button" disabled={saving} onClick={() => setSelected(null)} className="rounded-xl border border-black/20 px-4 py-2 text-sm">Cancel</button>

@@ -29,7 +29,7 @@ export async function PATCH(
 
     const membershipNumber = parsed.data.membershipNumber.toUpperCase();
     if (!validateMembershipNumber(membershipNumber)) {
-      return NextResponse.json({ error: 'Use RSSSOSA/YYYY/NNNN or RSSSOSAA/YYYY/NNNNN' }, { status: 400 });
+      return NextResponse.json({ error: 'Use RSSSOSA/YYYY/NNNN (or RSSSOSAA/YYYY/NNNNN for legacy numbers)' }, { status: 400 });
     }
 
     await connectDB();

@@ -241,7 +241,7 @@ export async function sendRejectionEmail(
           </div>` : ''}
           <p style="margin:0 0 24px;font-size:13px;color:#666;line-height:1.6">
             For further information or to appeal this decision, please contact us at 
-            <a href="mailto:oldstudentassociation94@gmail.com" style="color:#1a472a">oldstudentassociation94@gmail.com</a>.
+            <a href="mailto:oldstudentsassociation94@gmail.com" style="color:#1a472a">oldstudentsassociation94@gmail.com</a>.
           </p>
           <p style="margin:16px 0 0;font-size:11px;color:#aaa;text-align:center">This is an automated message. Please do not reply to this email.</p>
         </td></tr>
@@ -254,7 +254,7 @@ export async function sendRejectionEmail(
 </body>
 </html>
     `.trim(),
-    text: `Dear ${fullName},\n\nYour application was not approved at this time.${reason ? '\n\nReason: ' + reason : ''}\n\nContact us: oldstudentassociation94@gmail.com`,
+    text: `Dear ${fullName},\n\nYour application was not approved at this time.${reason ? '\n\nReason: ' + reason : ''}\n\nContact us: oldstudentsassociation94@gmail.com`,
   });
 }
 
@@ -269,7 +269,7 @@ export async function sendPaymentClaimRejectedEmail(
     from: FROM,
     to: email,
     subject: 'Update on your registration payment report',
-    text: `Dear ${fullName},\n\nYour in-person registration payment report for application ${applicationRef} could not be confirmed.\n\nReason: ${reason}\n\nIf you still need to pay, continue to payment here: ${paymentUrl}\n\nIf you believe this is an error, contact oldstudentassociation94@gmail.com.`,
+    text: `Dear ${fullName},\n\nYour in-person registration payment report for application ${applicationRef} could not be confirmed.\n\nReason: ${reason}\n\nIf you still need to pay, continue to payment here: ${paymentUrl}\n\nIf you believe this is an error, contact oldstudentsassociation94@gmail.com.`,
   });
 }
 
@@ -286,7 +286,7 @@ export async function sendPaymentClaimConfirmedEmail(
   });
 }
 
-const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || 'oldstudentassociation94@gmail.com';
+const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || 'oldstudentsassociation94@gmail.com';
 
 // ── Admin notification: new registration ────────────────────────────
 export async function notifyAdminNewRegistration(applicant: {
