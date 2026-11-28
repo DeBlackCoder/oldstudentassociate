@@ -46,11 +46,13 @@ export default function ReviewStep({ data, onBack, onEdit, applicationRef, profi
       clearRegistrationDraft(draftStorageKey);
       if (result.paymentStatus === 'paid' || paymentStatus === 'paid') {
         onSaved?.();
+        setIsSubmitting(false);
         router.push('/members/dashboard?tab=application');
       } else {
         const ref = result.applicationRef || applicationRef;
         if (!ref) throw new Error('Your form was saved. Open Registration payment in your dashboard to continue.');
         onSaved?.();
+        setIsSubmitting(false);
         router.push(`/register/payment-choice?ref=${encodeURIComponent(ref)}`);
       }
     } catch (err) {

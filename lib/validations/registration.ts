@@ -15,7 +15,7 @@ export const personalInfoSchema = z.object({
   residentialAddress: z.string().min(10, 'Address must be at least 10 characters'),
   stateOfOrigin: z.string().min(2, 'Please select your state of origin'),
   lga: z.string().min(2, 'Please select your LGA'),
-  referredBy: z.string().trim().min(2, 'Please enter who referred you').max(100, 'Referral name must be at most 100 characters'),
+  referredBy: z.string().trim().min(2, 'Please enter who referred you').max(100, 'Referral name must be at most 100 characters').optional().default(''),
 });
 
 export const schoolInfoSchema = z.object({

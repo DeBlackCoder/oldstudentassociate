@@ -35,7 +35,6 @@ export async function saveRegistration(member: HydratedDocument<IMember>, data: 
       { $set: fields }, { new: true, runValidators: true });
     if (!applicant) throw new HttpError(409, 'Your saved form could not be linked to this account. Contact the association.');
   } else {
-    await Applicant.init();
     const existing = await Applicant.findOne({ memberId: member._id });
     const applicationRef = existing?.applicationRef || await generateApplicationRef();
     try {

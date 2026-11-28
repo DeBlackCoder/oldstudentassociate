@@ -41,7 +41,7 @@ export async function readJson(request: Request) {
 export function routeError(error: unknown) {
   if (error instanceof HttpError) return NextResponse.json({ error: error.message }, { status: error.status });
   if (error instanceof z.ZodError) return NextResponse.json({ error: error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ') }, { status: 400 });
-  if ((error as { code?: number })?.code === 11000) return NextResponse.json({ error: 'You have already applied for this scholarship' }, { status: 409 });
+  if ((error as { code?: number })?.code === 11000) return NextResponse.json({ error: 'A registration form is already linked to your account. Refresh the page and try again.' }, { status: 409 });
   console.error('Community portal error:', error);
   return NextResponse.json({ error: 'Unable to complete this request. Please try again.' }, { status: 500 });
 }
